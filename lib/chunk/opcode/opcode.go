@@ -3,5 +3,6 @@ package opcode
 type OpCode byte
 
 const (
-	OP_RETURN byte = iota
+	OP_CONSTANT byte = iota
+	OP_RETURN
 )

@@ -9,11 +9,9 @@ import (
 func main() {
 	var chunk chunk.Chunk
 
-	chunk.WriteChunk(opcode.OP_RETURN)
-	chunk.WriteChunk(opcode.OP_RETURN)
-	debug.DisassembleChunk(&chunk, "test chunk 1")
-	chunk.WriteChunk(opcode.OP_RETURN)
-	debug.DisassembleChunk(&chunk, "test chunk 2")
-	chunk.FreeChunk()
-	debug.DisassembleChunk(&chunk, "test chunk 3")
+	constant := chunk.AddConstant(1.2)
+	chunk.WriteChunk(opcode.OP_CONSTANT, 123)
+	chunk.WriteChunk(byte(constant), 123)
+	chunk.WriteChunk(opcode.OP_RETURN, 123)
+	debug.DisassembleChunk(&chunk, "test chunk")
 }
