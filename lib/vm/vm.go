@@ -11,13 +11,23 @@ import (
 	"unsafe"
 )
 
+const (
+	STACK_INITIAL_SIZE int = 256
+)
+
 type VM struct {
 	Chunk *chunk.Chunk
 	IP    *byte
+	Stack []value.Value
+	// StackTop *value.Value
 }
 
-func InitVM() *VM {
+func NewVM() *VM {
 	return &VM{Chunk: nil}
+}
+
+func (vm *VM) InitVM() {
+	vm.resetStack()
 }
 
 func (vm *VM) Interpret(chunk *chunk.Chunk) interpretresult.InterpretResult {
@@ -31,19 +41,59 @@ func (vm *VM) FreeVM() {}
 func (vm *VM) run() interpretresult.InterpretResult {
 	for {
 		if config.DEBUG_TRACE_EXECUTION {
+			fmt.Print("          ")
+			for _, val := range vm.Stack {
+				fmt.Print("[ ")
+				val.PrintValue()
+				fmt.Print(" ]")
+			}
+			fmt.Print("\n")
 			debug.DisassembleInstruction(vm.Chunk, int(uintptr(unsafe.Pointer(vm.IP))-uintptr(unsafe.Pointer(&(vm.Chunk.Code[0])))))
 		}
 		var instruction byte
 		switch instruction = vm.readByte(); instruction {
-		case opcode.OP_RETURN:
-			return interpretresult.INTERPRET_OK
 		case opcode.OP_CONSTANT:
 			var constant value.Value = vm.readConstant()
-			constant.PrintValue()
-			fmt.Print("\n")
+			vm.Push(constant)
 			break
+		case opcode.OP_RETURN:
+			vm.Pop().PrintValue()
+			fmt.Print("\n")
+			return interpretresult.INTERPRET_OK
 		}
 	}
+}
+
+func (vm *VM) Push(val value.Value) {
+	// *vm.StackTop = val
+
+	// // Convert a pointer to an Value to an unsafe.Pointer, then to a uintptr.
+	// addressHolder := uintptr(unsafe.Pointer(vm.StackTop))
+
+	// // Increment the value of the address by the number of bytes of an element which is an byte.
+	// addressHolder = addressHolder + unsafe.Sizeof(*(vm.StackTop))
+
+	// // Convert a uintptr to an unsafe.Pointer, then to a pointer to an Value.
+	// vm.StackTop = (*value.Value)(unsafe.Pointer(addressHolder))
+
+	vm.Stack = append(vm.Stack, val)
+}
+
+func (vm *VM) Pop() *value.Value {
+	// // Convert a pointer to an Value to an unsafe.Pointer, then to a uintptr.
+	// addressHolder := uintptr(unsafe.Pointer(vm.StackTop))
+
+	// // Increment the value of the address by the number of bytes of an element which is an byte.
+	// addressHolder = addressHolder - unsafe.Sizeof(*(vm.StackTop))
+
+	// // Convert a uintptr to an unsafe.Pointer, then to a pointer to an Value.
+	// vm.StackTop = (*value.Value)(unsafe.Pointer(addressHolder))
+
+	// return *vm.StackTop
+
+	var x *value.Value
+	x, vm.Stack = &vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
+	return x
 }
 
 func (vm *VM) readByte() byte {
@@ -64,4 +114,9 @@ func (vm *VM) readByte() byte {
 
 func (vm *VM) readConstant() value.Value {
 	return vm.Chunk.Constants.Values[vm.readByte()]
+}
+
+func (vm *VM) resetStack() {
+	vm.Stack = make([]value.Value, 0)
+	// vm.StackTop = &(vm.Stack[0])
 }
