@@ -56,8 +56,31 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			var constant value.Value = vm.readConstant()
 			vm.Push(constant)
 			break
+		case opcode.OP_NEGATE:
+			vm.Push(-vm.Pop())
+		case opcode.OP_ADD:
+			vm.binaryOP(func(a, b value.Value) value.Value {
+				return a + b
+			})
+			break
+		case opcode.OP_SUBTRACT:
+			vm.binaryOP(func(a, b value.Value) value.Value {
+				return a - b
+			})
+			break
+		case opcode.OP_MULTIPLY:
+			vm.binaryOP(func(a, b value.Value) value.Value {
+				return a * b
+			})
+			break
+		case opcode.OP_DIVIDE:
+			vm.binaryOP(func(a, b value.Value) value.Value {
+				return a / b
+			})
+			break
 		case opcode.OP_RETURN:
-			vm.Pop().PrintValue()
+			poped := vm.Pop()
+			(&poped).PrintValue()
 			fmt.Print("\n")
 			return interpretresult.INTERPRET_OK
 		}
@@ -79,7 +102,7 @@ func (vm *VM) Push(val value.Value) {
 	vm.Stack = append(vm.Stack, val)
 }
 
-func (vm *VM) Pop() *value.Value {
+func (vm *VM) Pop() value.Value {
 	// // Convert a pointer to an Value to an unsafe.Pointer, then to a uintptr.
 	// addressHolder := uintptr(unsafe.Pointer(vm.StackTop))
 
@@ -91,8 +114,8 @@ func (vm *VM) Pop() *value.Value {
 
 	// return *vm.StackTop
 
-	var x *value.Value
-	x, vm.Stack = &vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
+	var x value.Value
+	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
 	return x
 }
 
@@ -100,7 +123,7 @@ func (vm *VM) readByte() byte {
 	// Convert a pointer to an byte to an unsafe.Pointer, then to a uintptr.
 	addressHolder := uintptr(unsafe.Pointer(vm.IP))
 
-	// Increment the value of the address by the number of bytes of an element which is an byte.
+	// Increment the value of the address by the number of bytes of an element
 	addressHolder = addressHolder + unsafe.Sizeof(*(vm.IP))
 
 	// Convert a uintptr to an unsafe.Pointer, then to a pointer to an byte.
@@ -119,4 +142,10 @@ func (vm *VM) readConstant() value.Value {
 func (vm *VM) resetStack() {
 	vm.Stack = make([]value.Value, 0)
 	// vm.StackTop = &(vm.Stack[0])
+}
+
+func (vm *VM) binaryOP(op func(a, b value.Value) value.Value) {
+	b := vm.Pop()
+	a := vm.Pop()
+	vm.Push(op(a, b))
 }

@@ -29,6 +29,16 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return constantInstruction("OP_CONSTANT", chunk, offset)
 	case opcode.OP_CONSTANT_LONG:
 		return longConstantInstruction("OP_CONSTANT_LONG", chunk, offset)
+	case opcode.OP_ADD:
+		return simpleInstruction("OP_ADD", offset)
+	case opcode.OP_SUBTRACT:
+		return simpleInstruction("OP_SUBTRACT", offset)
+	case opcode.OP_MULTIPLY:
+		return simpleInstruction("OP_MULTIPLY", offset)
+	case opcode.OP_DIVIDE:
+		return simpleInstruction("OP_DIVIDE", offset)
+	case opcode.OP_NEGATE:
+		return simpleInstruction("OP_NEGATE", offset)
 	case opcode.OP_RETURN:
 		return simpleInstruction("OP_RETURN", offset)
 	default:
