@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	vm := vm.NewVM()
+	vm := vm.New()
 	vm.InitVM()
 	var chunk chunk.Chunk
 

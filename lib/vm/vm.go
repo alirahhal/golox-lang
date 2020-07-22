@@ -22,7 +22,7 @@ type VM struct {
 	// StackTop *value.Value
 }
 
-func NewVM() *VM {
+func New() *VM {
 	return &VM{Chunk: nil}
 }
 
