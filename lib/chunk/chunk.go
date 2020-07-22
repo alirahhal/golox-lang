@@ -11,6 +11,10 @@ type Chunk struct {
 	Constants value.ValueArray
 }
 
+func New() *Chunk {
+	return &Chunk{}
+}
+
 func (chunk *Chunk) WriteChunk(b byte, line int) {
 	chunk.Code = append(chunk.Code, b)
 	chunk.Lines = append(chunk.Lines, line)

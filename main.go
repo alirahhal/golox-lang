@@ -9,7 +9,7 @@ import (
 func main() {
 	vm := vm.New()
 	vm.InitVM()
-	var chunk chunk.Chunk
+	chunk := chunk.New()
 
 	chunk.WriteConstant(1.2, 123)
 	chunk.WriteConstant(5, 123)
@@ -18,7 +18,7 @@ func main() {
 	chunk.WriteChunk(opcode.OP_SUBTRACT, 123)
 	chunk.WriteChunk(opcode.OP_RETURN, 123)
 
-	vm.Interpret(&chunk)
+	vm.Interpret(chunk)
 
 	vm.FreeVM()
 	chunk.FreeChunk()
