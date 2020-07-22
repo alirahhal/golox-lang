@@ -12,7 +12,10 @@ type Chunk struct {
 }
 
 func New() *Chunk {
-	return &Chunk{}
+	chunk := new(Chunk)
+	chunk.Code = make([]byte, 0)
+	chunk.Lines = make([]int, 0)
+	return chunk
 }
 
 func (chunk *Chunk) WriteChunk(b byte, line int) {

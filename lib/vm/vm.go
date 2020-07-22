@@ -19,11 +19,12 @@ type VM struct {
 	Chunk *chunk.Chunk
 	IP    *byte
 	Stack []value.Value
-	// StackTop *value.Value
 }
 
 func New() *VM {
-	return &VM{Chunk: nil}
+	vm := new(VM)
+	vm.Stack = make([]value.Value, 0)
+	return vm
 }
 
 func (vm *VM) InitVM() {
@@ -88,33 +89,12 @@ func (vm *VM) run() interpretresult.InterpretResult {
 }
 
 func (vm *VM) Push(val value.Value) {
-	// *vm.StackTop = val
-
-	// // Convert a pointer to an Value to an unsafe.Pointer, then to a uintptr.
-	// addressHolder := uintptr(unsafe.Pointer(vm.StackTop))
-
-	// // Increment the value of the address by the number of bytes of an element which is an byte.
-	// addressHolder = addressHolder + unsafe.Sizeof(*(vm.StackTop))
-
-	// // Convert a uintptr to an unsafe.Pointer, then to a pointer to an Value.
-	// vm.StackTop = (*value.Value)(unsafe.Pointer(addressHolder))
-
 	vm.Stack = append(vm.Stack, val)
 }
 
 func (vm *VM) Pop() value.Value {
-	// // Convert a pointer to an Value to an unsafe.Pointer, then to a uintptr.
-	// addressHolder := uintptr(unsafe.Pointer(vm.StackTop))
-
-	// // Increment the value of the address by the number of bytes of an element which is an byte.
-	// addressHolder = addressHolder - unsafe.Sizeof(*(vm.StackTop))
-
-	// // Convert a uintptr to an unsafe.Pointer, then to a pointer to an Value.
-	// vm.StackTop = (*value.Value)(unsafe.Pointer(addressHolder))
-
-	// return *vm.StackTop
-
 	var x value.Value
+	// todo: finding a systematic way for shrinking the stack based on a specific algo
 	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
 	return x
 }
