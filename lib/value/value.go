@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// maybe Value should be an interface, and make others types implement it
 type Value float64
 
 type ValueArray struct {

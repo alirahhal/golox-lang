@@ -6,6 +6,7 @@ import (
 	"golanglox/lib/chunk/opcode"
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
+	"golanglox/lib/unsafecode"
 	"golanglox/lib/value"
 	"golanglox/lib/vm/interpretresult"
 	"unsafe"
@@ -94,23 +95,14 @@ func (vm *VM) Push(val value.Value) {
 
 func (vm *VM) Pop() value.Value {
 	var x value.Value
-	// todo: finding a systematic way for shrinking the stack based on a specific algo
+	// todo: find a way for shrinking the stack based on a specific algo
 	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
 	return x
 }
 
 func (vm *VM) readByte() byte {
-	// Convert a pointer to an byte to an unsafe.Pointer, then to a uintptr.
-	addressHolder := uintptr(unsafe.Pointer(vm.IP))
-
-	// Increment the value of the address by the number of bytes of an element
-	addressHolder = addressHolder + unsafe.Sizeof(*(vm.IP))
-
-	// Convert a uintptr to an unsafe.Pointer, then to a pointer to an byte.
-	newPtr := (*byte)(unsafe.Pointer(addressHolder))
-
 	returnVal := *(vm.IP)
-	vm.IP = newPtr
+	vm.IP = unsafecode.Increment(vm.IP)
 
 	return returnVal
 }
@@ -121,7 +113,6 @@ func (vm *VM) readConstant() value.Value {
 
 func (vm *VM) resetStack() {
 	vm.Stack = make([]value.Value, 0)
-	// vm.StackTop = &(vm.Stack[0])
 }
 
 func (vm *VM) binaryOP(op func(a, b value.Value) value.Value) {

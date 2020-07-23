@@ -61,9 +61,9 @@ func constantInstruction(name string, chunk *chunk.Chunk, offset int) int {
 }
 
 func longConstantInstruction(name string, chunk *chunk.Chunk, offset int) int {
-	constByte := make([]byte, 4)
-	copy(constByte, chunk.Code[offset+1:offset+4])
-	var constant uint32 = binary.LittleEndian.Uint32(constByte)
+	constBytes := make([]byte, 4)
+	copy(constBytes, chunk.Code[offset+1:offset+4])
+	var constant uint32 = binary.LittleEndian.Uint32(constBytes)
 	fmt.Printf("%s %4d ", name, constant)
 	chunk.Constants.Values[constant].PrintValue()
 	fmt.Print("\n")

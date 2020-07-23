@@ -38,8 +38,8 @@ func (chunk *Chunk) WriteConstant(value value.Value, line int) {
 }
 
 func (chunk *Chunk) FreeChunk() {
-	chunk.Code = nil
-	chunk.Lines = nil
+	chunk.Code = make([]byte, 0)
+	chunk.Lines = make([]int, 0)
 	chunk.Constants.FreeValueArray()
 }
 
