@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"encoding/binary"
 	"fmt"
 	"golanglox/lib/chunk"
 	"golanglox/lib/chunk/opcode"
@@ -58,6 +59,10 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			var constant value.Value = vm.readConstant()
 			vm.Push(constant)
 			break
+		case opcode.OP_CONSTANT_LONG:
+			var constant value.Value = vm.readConstantLong()
+			vm.Push(constant)
+			break
 		case opcode.OP_NEGATE:
 			vm.Push(-vm.Pop())
 		case opcode.OP_ADD:
@@ -109,6 +114,19 @@ func (vm *VM) readByte() byte {
 
 func (vm *VM) readConstant() value.Value {
 	return vm.Chunk.Constants.Values[vm.readByte()]
+}
+
+func (vm *VM) readConstantLong() value.Value {
+	constBytes := make([]byte, 0)
+	for i := 0; i < 4; i++ {
+		if i == 3 {
+			constBytes = append(constBytes, 0)
+			break
+		}
+		constBytes = append(constBytes, vm.readByte())
+	}
+	var constantAddress uint32 = binary.LittleEndian.Uint32(constBytes)
+	return vm.Chunk.Constants.Values[constantAddress]
 }
 
 func (vm *VM) resetStack() {
