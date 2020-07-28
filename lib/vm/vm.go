@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golanglox/lib/chunk"
 	"golanglox/lib/chunk/opcode"
+	"golanglox/lib/compiler"
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
 	"golanglox/lib/unsafecode"
@@ -33,10 +34,12 @@ func (vm *VM) InitVM() {
 	vm.resetStack()
 }
 
-func (vm *VM) Interpret(chunk *chunk.Chunk) interpretresult.InterpretResult {
-	vm.Chunk = chunk
-	vm.IP = &(vm.Chunk.Code[0])
-	return vm.run()
+func (vm *VM) Interpret(source string) interpretresult.InterpretResult {
+	compiler.Compile(source)
+	return interpretresult.INTERPRET_OK
+	// vm.Chunk = chunk
+	// vm.IP = &(vm.Chunk.Code[0])
+	// return vm.run()
 }
 
 func (vm *VM) FreeVM() {}

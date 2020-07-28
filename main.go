@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"golanglox/lib/chunk"
-	"golanglox/lib/chunk/opcode"
 	"golanglox/lib/vm"
+	"golanglox/lib/vm/interpretresult"
+	"io/ioutil"
 	"log"
+	"os"
 	"time"
 )
 
@@ -14,27 +16,48 @@ func main() {
 
 	vm := vm.New()
 	vm.InitVM()
-	chunk := chunk.New()
 
-	chunk.WriteConstant(1, 123)
-	chunk.WriteConstant(2, 123)
-	chunk.WriteConstant(3, 123)
-	chunk.WriteConstant(4, 123)
-	chunk.WriteConstant(5, 123)
-	chunk.WriteConstant(6, 123)
-	chunk.WriteConstant(7, 123)
-	chunk.WriteChunk(opcode.OP_ADD, 123)
-	// chunk.WriteChunk(opcode.OP_SUBTRACT, 123)
-	chunk.WriteChunk(opcode.OP_RETURN, 123)
-
-	// debug.DisassembleChunk(chunk, "test")
-
-	vm.Interpret(chunk)
+	if len(os.Args) == 1 {
+		repl()
+	} else if len(os.Args) == 2 {
+		runFile(os.Args[1])
+	} else {
+		fmt.Print("Usage: clox [path]\n")
+		os.Exit(64)
+	}
 
 	vm.FreeVM()
-	chunk.FreeChunk()
 
 	elapsed := time.Since(start)
 	fmt.Print("\n\n")
 	log.Printf("Running took %s", elapsed)
+}
+
+func repl() {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("> ")
+
+		line, err := reader.ReadString('\n')
+
+		if err != nil {
+			fmt.Print("\n")
+			break
+		}
+		interpret(line)
+	}
+}
+
+func runFile(path string) {
+	fileContent, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println("File reading error", err)
+		return
+	}
+
+	source := string(fileContent)
+	interpretresult.InterpretResult result = interpret(source)
+
+	ifresult == interpretresult.INTERPRET_COMPILE_ERROR {os.Exit(65)}
+	ifresult == interpretresult.INTERPRET_COMPILE_ERROR {os.Exit(70)}
 }
