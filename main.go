@@ -18,9 +18,9 @@ func main() {
 	vm.InitVM()
 
 	if len(os.Args) == 1 {
-		repl()
+		repl(vm)
 	} else if len(os.Args) == 2 {
-		runFile(os.Args[1])
+		runFile(os.Args[1], vm)
 	} else {
 		fmt.Print("Usage: clox [path]\n")
 		os.Exit(64)
@@ -33,22 +33,22 @@ func main() {
 	log.Printf("Running took %s", elapsed)
 }
 
-func repl() {
+func repl(vm *vm.VM) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("> ")
 
-		line, err := reader.ReadString('\n')
+		line, err := reader.ReadString(byte(13))
 
 		if err != nil {
 			fmt.Print("\n")
 			break
 		}
-		interpret(line)
+		vm.Interpret(line)
 	}
 }
 
-func runFile(path string) {
+func runFile(path string, vm *vm.VM) {
 	fileContent, err := ioutil.ReadFile(path)
 	if err != nil {
 		fmt.Println("File reading error", err)
@@ -56,8 +56,12 @@ func runFile(path string) {
 	}
 
 	source := string(fileContent)
-	interpretresult.InterpretResult result = interpret(source)
+	result := vm.Interpret(source)
 
-	ifresult == interpretresult.INTERPRET_COMPILE_ERROR {os.Exit(65)}
-	ifresult == interpretresult.INTERPRET_COMPILE_ERROR {os.Exit(70)}
+	if result == interpretresult.INTERPRET_COMPILE_ERROR {
+		os.Exit(65)
+	}
+	if result == interpretresult.INTERPRET_COMPILE_ERROR {
+		os.Exit(70)
+	}
 }
