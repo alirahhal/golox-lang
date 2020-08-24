@@ -4,9 +4,9 @@ program        → declaration* EOF ;
 
 ### Declarations
 
-declaration    → classDecl__
-               | funDecl__
-               | varDecl__
+declaration    → classDecl\
+               | funDecl\
+               | varDecl\
                | statement ;
 
 classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )?
