@@ -18,6 +18,7 @@ varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 
 ### Statements
 
+<pre>
 statement      → exprStmt
                | forStmt
                | ifStmt
@@ -35,9 +36,11 @@ printStmt      → "print" expression ";" ;
 returnStmt     → "return" expression? ";" ;
 whileStmt      → "while" "(" expression ")" statement ;
 block          → "{" declaration* "}" ;
+</pre>
 
 ### Expressions
 
+<pre>
 expression     → assignment ;
 
 assignment     → ( call "." )? IDENTIFIER "=" assignment
@@ -55,18 +58,23 @@ call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 primary        → "true" | "false" | "nil" | "this"
                | NUMBER | STRING | IDENTIFIER | "(" expression ")"
                | "super" "." IDENTIFIER ;
+</pre>
 
 ### Utility Rules
 
+<pre>
 function       → IDENTIFIER "(" parameters? ")" block ;
 parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
+</pre>
 
 
 # Lexical Grammar
 
+<pre>
 NUMBER         → DIGIT+ ( "." DIGIT+ )? ;
 STRING         → "\"" <any char except "\"">* "\"" ;
 IDENTIFIER     → ALPHA ( ALPHA | DIGIT )* ;
 ALPHA          → "a" ... "z" | "A" ... "Z" | "_" ;
 DIGIT          → "0" ... "9" ;
+</pre>
