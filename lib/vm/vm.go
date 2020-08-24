@@ -35,12 +35,20 @@ func (vm *VM) InitVM() {
 }
 
 func (vm *VM) Interpret(source string) interpretresult.InterpretResult {
-	compiler.Compile(source)
-	return interpretresult.INTERPRET_OK
+	chunk := chunk.New()
 
-	// vm.Chunk = chunk
-	// vm.IP = &(vm.Chunk.Code[0])
-	// return vm.run()
+	if !compiler.Compile(source, chunk) {
+		chunk.FreeChunk()
+		return interpretresult.INTERPRET_COMPILE_ERROR
+	}
+
+	vm.Chunk = chunk
+	vm.IP = &(vm.Chunk.Code[0])
+
+	result := vm.run()
+
+	chunk.FreeChunk()
+	return result
 }
 
 func (vm *VM) FreeVM() {}
@@ -57,6 +65,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			fmt.Print("\n")
 			debug.DisassembleInstruction(vm.Chunk, int(uintptr(unsafe.Pointer(vm.IP))-uintptr(unsafe.Pointer(&(vm.Chunk.Code[0])))))
 		}
+
 		var instruction byte
 		switch instruction = vm.readByte(); instruction {
 		case opcode.OP_CONSTANT:
