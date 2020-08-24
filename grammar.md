@@ -1,6 +1,8 @@
 # Syntax Grammar
 
+<pre>
 program        → declaration* EOF ;
+</pre>
 
 ### Declarations
 
