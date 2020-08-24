@@ -6,8 +6,6 @@ import (
 )
 
 type Scanner struct {
-	// Start   string
-	// Current string
 	Source  string
 	Start   int
 	Current int

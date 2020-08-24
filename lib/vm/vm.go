@@ -37,6 +37,7 @@ func (vm *VM) InitVM() {
 func (vm *VM) Interpret(source string) interpretresult.InterpretResult {
 	compiler.Compile(source)
 	return interpretresult.INTERPRET_OK
+
 	// vm.Chunk = chunk
 	// vm.IP = &(vm.Chunk.Code[0])
 	// return vm.run()
