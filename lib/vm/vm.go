@@ -78,6 +78,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			break
 		case opcode.OP_NEGATE:
 			vm.Push(-vm.Pop())
+			break
 		case opcode.OP_ADD:
 			vm.binaryOP(func(a, b value.Value) value.Value {
 				return a + b

@@ -1,0 +1,17 @@
+package precedence
+
+type Precedence byte
+
+const (
+	PREC_NONE Precedence = iota
+	PREC_ASSIGNMENT
+	PREC_OR
+	PREC_AND
+	PREC_EQUALITY
+	PREC_COMPARISON
+	PREC_TERM
+	PREC_FACTOR
+	PREC_UNARY
+	PREC_CALL
+	PREC_PRIMARY
+)

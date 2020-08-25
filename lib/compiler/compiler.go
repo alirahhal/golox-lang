@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"golanglox/lib/chunk"
 	"golanglox/lib/chunk/opcode"
+	"golanglox/lib/compiler/precedence"
 	"golanglox/lib/scanner"
 	"golanglox/lib/scanner/tokentype"
+	"golanglox/lib/value"
 	"os"
+	"strconv"
 )
 
 // Parser struct
@@ -80,8 +83,74 @@ func (parser *Parser) emitReturn() {
 	parser.emitByte(opcode.OP_RETURN)
 }
 
+func (parser *Parser) emitConstant(value value.Value) {
+	parser.currentChunk().WriteConstant(value, parser.Previous.Line)
+}
+
 func (parser *Parser) endCompiler() {
 	parser.emitReturn()
+}
+
+func (parser *Parser) binary() {
+	// Remember the operator
+	operatorType := parser.Previous.Type
+
+	// Compile the right operand
+	/************** Continue Here ************/
+	// var *ParseRule rule = parser.getRule(operatorType)
+	// parser.parsePrecedence()
+
+	switch operatorType {
+	case tokentype.TOKEN_PLUS:
+		parser.emitByte(opcode.OP_ADD)
+		break
+	case tokentype.TOKEN_MINUS:
+		parser.emitByte(opcode.OP_SUBTRACT)
+		break
+	case tokentype.TOKEN_STAR:
+		parser.emitByte(opcode.OP_MULTIPLY)
+		break
+	case tokentype.TOKEN_SLASH:
+		parser.emitByte(opcode.OP_DIVIDE)
+		break
+	default:
+		return
+	}
+}
+
+func (parser *Parser) grouping() {
+	parser.expression()
+	parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after expression.")
+}
+
+func (parser *Parser) number() {
+	val, err := strconv.ParseFloat(parser.Previous.Lexeme, 64)
+	if err != nil {
+	}
+	parser.emitConstant(value.Value(val))
+}
+
+func (parser *Parser) unary() {
+	operatorType := parser.Previous.Type
+
+	// Compile the operand
+	parser.parsePrecedence(precedence.PREC_UNARY)
+
+	switch operatorType {
+	case tokentype.TOKEN_MINUS:
+		parser.emitByte(opcode.OP_NEGATE)
+		break
+	default:
+		return
+	}
+}
+
+func (parser *Parser) parsePrecedence(precedence precedence.Precedence) {
+
+}
+
+func (parser *Parser) expression() {
+	parser.parsePrecedence(precedence.PREC_ASSIGNMENT)
 }
 
 func (parser *Parser) currentChunk() *chunk.Chunk {
