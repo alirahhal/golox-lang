@@ -8,7 +8,8 @@ import (
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
 	"golanglox/lib/scanner"
-	"golanglox/lib/scanner/tokentype"
+	"golanglox/lib/scanner/token"
+	"golanglox/lib/scanner/token/tokentype"
 	"golanglox/lib/value"
 	"os"
 	"strconv"
@@ -16,8 +17,8 @@ import (
 
 // Parser struct
 type Parser struct {
-	Current   scanner.Token
-	Previous  scanner.Token
+	Current   token.Token
+	Previous  token.Token
 	HadError  bool
 	PanicMode bool
 
@@ -235,7 +236,7 @@ func (parser *Parser) currentChunk() *chunk.Chunk {
 	return parser.chunk
 }
 
-func (parser *Parser) errorAt(token *scanner.Token, message string) {
+func (parser *Parser) errorAt(token *token.Token, message string) {
 	if parser.PanicMode {
 		return
 	}

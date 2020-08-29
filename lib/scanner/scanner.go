@@ -1,7 +1,8 @@
 package scanner
 
 import (
-	"golanglox/lib/scanner/tokentype"
+	"golanglox/lib/scanner/token"
+	"golanglox/lib/scanner/token/tokentype"
 	"unicode"
 )
 
@@ -10,12 +11,6 @@ type Scanner struct {
 	Start   int
 	Current int
 	Line    int
-}
-
-type Token struct {
-	Type   tokentype.TokenType
-	Lexeme string
-	Line   int
 }
 
 func New() *Scanner {
@@ -38,7 +33,7 @@ func isAlpha(c rune) bool {
 	return unicode.IsLetter(c) || c == '_'
 }
 
-func (scanner *Scanner) ScanToken() Token {
+func (scanner *Scanner) ScanToken() token.Token {
 	scanner.skipWhiteSpace()
 	scanner.Start = scanner.Current
 
@@ -146,22 +141,12 @@ func (scanner *Scanner) match(expected rune) bool {
 	return true
 }
 
-func (scanner *Scanner) makeToken(tokenType tokentype.TokenType) Token {
-	var token Token
-	token.Type = tokenType
-	token.Lexeme = scanner.Source[scanner.Start:scanner.Current]
-	token.Line = scanner.Line
-
-	return token
+func (scanner *Scanner) makeToken(tokenType tokentype.TokenType) token.Token {
+	return token.MakeToken(tokenType, scanner.Source[scanner.Start:scanner.Current], scanner.Line)
 }
 
-func (scanner *Scanner) errorToken(message string) Token {
-	var token Token
-	token.Type = tokentype.TOKEN_ERROR
-	token.Lexeme = message
-	token.Line = scanner.Line
-
-	return token
+func (scanner *Scanner) errorToken(message string) token.Token {
+	return token.MakeToken(tokentype.TOKEN_ERROR, message, scanner.Line)
 }
 
 func (scanner *Scanner) skipWhiteSpace() {
@@ -253,7 +238,7 @@ func (scanner *Scanner) identifierType() tokentype.TokenType {
 	return tokentype.TOKEN_IDENTIFIER
 }
 
-func (scanner *Scanner) identifier() Token {
+func (scanner *Scanner) identifier() token.Token {
 	for isAlpha(scanner.peek()) || isDigit(scanner.peek()) {
 		scanner.advance()
 	}
@@ -261,7 +246,7 @@ func (scanner *Scanner) identifier() Token {
 	return scanner.makeToken(scanner.identifierType())
 }
 
-func (scanner *Scanner) number() Token {
+func (scanner *Scanner) number() token.Token {
 	for isDigit(scanner.peek()) {
 		scanner.advance()
 	}
@@ -279,7 +264,7 @@ func (scanner *Scanner) number() Token {
 	return scanner.makeToken(tokentype.TOKEN_NUMBER)
 }
 
-func (scanner *Scanner) string() Token {
+func (scanner *Scanner) string() token.Token {
 	for scanner.peek() != '"' && !scanner.isAtEnd() {
 		if scanner.peek() == '\n' {
 			scanner.Line++
