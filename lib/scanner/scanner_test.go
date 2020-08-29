@@ -29,6 +29,7 @@ func TestScanToken(t *testing.T) {
 		}
 	})
 
+	// test for all kind of tokens
 	t.Run("test different tokens", func(t *testing.T) {
 		dataItems := []struct {
 			source          string
