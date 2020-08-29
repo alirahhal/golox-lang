@@ -84,19 +84,19 @@ func (scanner *Scanner) ScanToken() token.Token {
 		}
 		return scanner.makeToken(tokenType)
 	case '=':
-		tokenType := tokentype.TOKEN_BANG
+		tokenType := tokentype.TOKEN_EQUAL
 		if scanner.match('=') {
 			tokenType = tokentype.TOKEN_EQUAL_EQUAL
 		}
 		return scanner.makeToken(tokenType)
 	case '<':
-		tokenType := tokentype.TOKEN_BANG
+		tokenType := tokentype.TOKEN_LESS
 		if scanner.match('=') {
 			tokenType = tokentype.TOKEN_LESS_EQUAL
 		}
 		return scanner.makeToken(tokenType)
 	case '>':
-		tokenType := tokentype.TOKEN_BANG
+		tokenType := tokentype.TOKEN_GREATER
 		if scanner.match('=') {
 			tokenType = tokentype.TOKEN_GREATER_EQUAL
 		}
@@ -134,10 +134,7 @@ func (scanner *Scanner) peekNext() rune {
 }
 
 func (scanner *Scanner) match(expected rune) bool {
-	if scanner.isAtEnd() {
-		return false
-	}
-	if []rune(scanner.Source)[scanner.Current] != expected {
+	if scanner.peek() != expected {
 		return false
 	}
 
