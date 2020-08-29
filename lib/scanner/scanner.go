@@ -6,6 +6,7 @@ import (
 	"unicode"
 )
 
+// Scanner struct
 type Scanner struct {
 	Source  string
 	Start   int
@@ -13,11 +14,13 @@ type Scanner struct {
 	Line    int
 }
 
+// New creates a new Scanner struct and returns a pointer to it
 func New() *Scanner {
 	scanner := new(Scanner)
 	return scanner
 }
 
+// InitScanner initializa a scanner
 func (scanner *Scanner) InitScanner(source string) {
 	scanner.Source = source
 	scanner.Start = 0
@@ -33,6 +36,7 @@ func isAlpha(c rune) bool {
 	return unicode.IsLetter(c) || c == '_'
 }
 
+// ScanToken scans the source program to return the next token to consume
 func (scanner *Scanner) ScanToken() token.Token {
 	scanner.skipWhiteSpace()
 	scanner.Start = scanner.Current
