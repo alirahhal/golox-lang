@@ -68,38 +68,38 @@ func (vm *VM) run() interpretresult.InterpretResult {
 
 		var instruction byte
 		switch instruction = vm.readByte(); instruction {
-		case opcode.OP_CONSTANT:
+		case byte(opcode.OP_CONSTANT):
 			var constant value.Value = vm.readConstant()
 			vm.Push(constant)
 			break
-		case opcode.OP_CONSTANT_LONG:
+		case byte(opcode.OP_CONSTANT_LONG):
 			var constant value.Value = vm.readConstantLong()
 			vm.Push(constant)
 			break
-		case opcode.OP_NEGATE:
+		case byte(opcode.OP_NEGATE):
 			vm.Push(-vm.Pop())
 			break
-		case opcode.OP_ADD:
+		case byte(opcode.OP_ADD):
 			vm.binaryOP(func(a, b value.Value) value.Value {
 				return a + b
 			})
 			break
-		case opcode.OP_SUBTRACT:
+		case byte(opcode.OP_SUBTRACT):
 			vm.binaryOP(func(a, b value.Value) value.Value {
 				return a - b
 			})
 			break
-		case opcode.OP_MULTIPLY:
+		case byte(opcode.OP_MULTIPLY):
 			vm.binaryOP(func(a, b value.Value) value.Value {
 				return a * b
 			})
 			break
-		case opcode.OP_DIVIDE:
+		case byte(opcode.OP_DIVIDE):
 			vm.binaryOP(func(a, b value.Value) value.Value {
 				return a / b
 			})
 			break
-		case opcode.OP_RETURN:
+		case byte(opcode.OP_RETURN):
 			poped := vm.Pop()
 			(&poped).PrintValue()
 			fmt.Print("\n")

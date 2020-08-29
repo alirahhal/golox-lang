@@ -4,51 +4,51 @@ type TokenType byte
 
 const (
 	// Single-character tokens.
-	TOKEN_LEFT_PAREN  TokenType = iota // 1 - 1
-	TOKEN_RIGHT_PAREN                  // 2 - 1
-	TOKEN_LEFT_BRACE                   // 3 - 1
-	TOKEN_RIGHT_BRACE                  // 4 - 1
-	TOKEN_COMMA                        // 5 - 1
-	TOKEN_DOT                          // 6 - 1
-	TOKEN_MINUS                        // 7 - 1
-	TOKEN_PLUS                         // 8 - 1
-	TOKEN_SEMICOLON                    // 9 - 1
-	TOKEN_SLASH                        // 10 - 1
-	TOKEN_STAR                         // 11 - 1
+	TOKEN_LEFT_PAREN  TokenType = iota // 0
+	TOKEN_RIGHT_PAREN                  // 1
+	TOKEN_LEFT_BRACE                   // 2
+	TOKEN_RIGHT_BRACE                  // 3
+	TOKEN_COMMA                        // 4
+	TOKEN_DOT                          // 5
+	TOKEN_MINUS                        // 6
+	TOKEN_PLUS                         // 7
+	TOKEN_SEMICOLON                    // 8
+	TOKEN_SLASH                        // 9
+	TOKEN_STAR                         // 10
 
 	// One or two character tokens.
-	TOKEN_BANG          // 12 - 1
-	TOKEN_BANG_EQUAL    // 13 - 1
-	TOKEN_EQUAL         // 14 - 1
-	TOKEN_EQUAL_EQUAL   // 15 - 1
-	TOKEN_GREATER       // 16 - 1
-	TOKEN_GREATER_EQUAL // 17 - 1
-	TOKEN_LESS          // 18 - 1
-	TOKEN_LESS_EQUAL    // 19 - 1
+	TOKEN_BANG          // 11
+	TOKEN_BANG_EQUAL    // 12
+	TOKEN_EQUAL         // 13
+	TOKEN_EQUAL_EQUAL   // 14
+	TOKEN_GREATER       // 15
+	TOKEN_GREATER_EQUAL // 16
+	TOKEN_LESS          // 17
+	TOKEN_LESS_EQUAL    // 18
 
 	// Literals.
-	TOKEN_IDENTIFIER // 20 - 1
-	TOKEN_STRING     // 21 - 1
-	TOKEN_NUMBER     // 22 - 1
+	TOKEN_IDENTIFIER // 19
+	TOKEN_STRING     // 20
+	TOKEN_NUMBER     // 21
 
 	// Keywords.
-	TOKEN_AND    // 23 - 1
-	TOKEN_CLASS  // 24 - 1
-	TOKEN_ELSE   // 25 - 1
-	TOKEN_FALSE  // 26 - 1
-	TOKEN_FOR    // 27 - 1
-	TOKEN_FUN    // 28 - 1
-	TOKEN_IF     // 29 - 1
-	TOKEN_NIL    // 30 - 1
-	TOKEN_OR     // 31 - 1
-	TOKEN_PRINT  // 32 - 1
-	TOKEN_RETURN // 33 - 1
-	TOKEN_SUPER  // 34 - 1
-	TOKEN_THIS   // 35 - 1
-	TOKEN_TRUE   // 36 - 1
-	TOKEN_VAR    // 37 - 1
-	TOKEN_WHILE  // 38 - 1
+	TOKEN_AND    // 22
+	TOKEN_CLASS  // 23
+	TOKEN_ELSE   // 24
+	TOKEN_FALSE  // 25
+	TOKEN_FOR    // 26
+	TOKEN_FUN    // 27
+	TOKEN_IF     // 28
+	TOKEN_NIL    // 29
+	TOKEN_OR     // 30
+	TOKEN_PRINT  // 31
+	TOKEN_RETURN // 32
+	TOKEN_SUPER  // 33
+	TOKEN_THIS   // 34
+	TOKEN_TRUE   // 35
+	TOKEN_VAR    // 36
+	TOKEN_WHILE  // 37
 
-	TOKEN_ERROR // 39 - 1
-	TOKEN_EOF   // 40 - 1
+	TOKEN_ERROR // 38
+	TOKEN_EOF   // 39
 )

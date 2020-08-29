@@ -16,7 +16,7 @@ func (valueArray *ValueArray) WriteValueArray(value Value) {
 }
 
 func (valueArray *ValueArray) FreeValueArray() {
-	valueArray.Values = nil
+	valueArray.Values = make([]Value, 0)
 }
 
 func (value *Value) PrintValue() {

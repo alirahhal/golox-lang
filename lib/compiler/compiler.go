@@ -93,7 +93,7 @@ func (parser *Parser) emitBytes(b1 byte, b2 byte) {
 }
 
 func (parser *Parser) emitReturn() {
-	parser.emitByte(opcode.OP_RETURN)
+	parser.emitByte(byte(opcode.OP_RETURN))
 }
 
 func (parser *Parser) emitConstant(value value.Value) {
@@ -120,16 +120,16 @@ func (parser *Parser) binary() {
 
 	switch operatorType {
 	case tokentype.TOKEN_PLUS:
-		parser.emitByte(opcode.OP_ADD)
+		parser.emitByte(byte(opcode.OP_ADD))
 		break
 	case tokentype.TOKEN_MINUS:
-		parser.emitByte(opcode.OP_SUBTRACT)
+		parser.emitByte(byte(opcode.OP_SUBTRACT))
 		break
 	case tokentype.TOKEN_STAR:
-		parser.emitByte(opcode.OP_MULTIPLY)
+		parser.emitByte(byte(opcode.OP_MULTIPLY))
 		break
 	case tokentype.TOKEN_SLASH:
-		parser.emitByte(opcode.OP_DIVIDE)
+		parser.emitByte(byte(opcode.OP_DIVIDE))
 		break
 	default:
 		return
@@ -156,7 +156,7 @@ func (parser *Parser) unary() {
 
 	switch operatorType {
 	case tokentype.TOKEN_MINUS:
-		parser.emitByte(opcode.OP_NEGATE)
+		parser.emitByte(byte(opcode.OP_NEGATE))
 		break
 	default:
 		return
