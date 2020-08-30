@@ -26,7 +26,7 @@ type VM struct {
 
 func New() *VM {
 	vm := new(VM)
-	vm.Stack = make([]value.Value, 0)
+	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
 	return vm
 }
 
@@ -144,7 +144,7 @@ func (vm *VM) readConstantLong() value.Value {
 }
 
 func (vm *VM) resetStack() {
-	vm.Stack = make([]value.Value, 0)
+	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
 }
 
 func (vm *VM) binaryOP(op func(a, b value.Value) value.Value) {

@@ -22,8 +22,8 @@ type Parser struct {
 	HadError  bool
 	PanicMode bool
 
-	scanner *scanner.Scanner
-	chunk   *chunk.Chunk // should be a global variable ???
+	scanner *scanner.Scanner // should be a global variable ???
+	chunk   *chunk.Chunk     // should be a global variable ???
 }
 
 // ParseFn func
@@ -176,6 +176,12 @@ func (parser *Parser) parsePrecedence(precedence precedence.Precedence) {
 	for precedence <= parser.getRule(parser.Current.Type).Precedence {
 		parser.advance()
 		infixRule := parser.getRule(parser.Previous.Type).Infix
+		// Not sure!!!
+		if infixRule == nil {
+			parser.error("Expect Expression.")
+			return
+		}
+		//
 		infixRule()
 	}
 }
