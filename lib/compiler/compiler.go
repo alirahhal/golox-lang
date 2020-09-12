@@ -27,7 +27,7 @@ type Parser struct {
 }
 
 // ParseFn func
-type ParseFn func()
+type ParseFn func(receiver *Parser)
 
 // ParseRule struct
 type ParseRule struct {
@@ -35,6 +35,8 @@ type ParseRule struct {
 	Infix      ParseFn
 	Precedence precedence.Precedence
 }
+
+var rules map[tokentype.TokenType]ParseRule
 
 // New creates a new parser and returns it
 func New(scanner *scanner.Scanner, chunk *chunk.Chunk) *Parser {
@@ -44,6 +46,50 @@ func New(scanner *scanner.Scanner, chunk *chunk.Chunk) *Parser {
 	parser.scanner = scanner
 	parser.chunk = chunk
 	return parser
+}
+
+func init() {
+	rules = make(map[tokentype.TokenType]ParseRule)
+	rules[tokentype.TOKEN_LEFT_PAREN] = ParseRule{(*Parser).grouping, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_RIGHT_PAREN] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LEFT_BRACE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_RIGHT_BRACE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_COMMA] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_DOT] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_MINUS] = ParseRule{(*Parser).unary, (*Parser).binary, precedence.PREC_TERM}
+	rules[tokentype.TOKEN_PLUS] = ParseRule{nil, (*Parser).binary, precedence.PREC_TERM}
+	rules[tokentype.TOKEN_SEMICOLON] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_SLASH] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
+	rules[tokentype.TOKEN_STAR] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
+	rules[tokentype.TOKEN_BANG] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_GREATER] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LESS] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_STRING] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_NUMBER] = ParseRule{(*Parser).number, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_AND] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_CLASS] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_ELSE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_FALSE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_FOR] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_FUN] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_IF] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_NIL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_OR] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_PRINT] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_RETURN] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_SUPER] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_THIS] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_TRUE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_VAR] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_WHILE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_ERROR] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_EOF] = ParseRule{nil, nil, precedence.PREC_NONE}
 }
 
 // Compile the input source string and emits byteCode
@@ -171,7 +217,7 @@ func (parser *Parser) parsePrecedence(precedence precedence.Precedence) {
 		return
 	}
 
-	prefixRule()
+	prefixRule(parser)
 
 	for precedence <= parser.getRule(parser.Current.Type).Precedence {
 		parser.advance()
@@ -182,54 +228,11 @@ func (parser *Parser) parsePrecedence(precedence precedence.Precedence) {
 			return
 		}
 		//
-		infixRule()
+		infixRule(parser)
 	}
 }
 
 func (parser *Parser) getRule(token tokentype.TokenType) *ParseRule {
-	rules := map[tokentype.TokenType]ParseRule{
-		tokentype.TOKEN_LEFT_PAREN:    {parser.grouping, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_RIGHT_PAREN:   {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_LEFT_BRACE:    {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_RIGHT_BRACE:   {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_COMMA:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_DOT:           {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_MINUS:         {parser.unary, parser.binary, precedence.PREC_TERM},
-		tokentype.TOKEN_PLUS:          {nil, parser.binary, precedence.PREC_TERM},
-		tokentype.TOKEN_SEMICOLON:     {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_SLASH:         {nil, parser.binary, precedence.PREC_FACTOR},
-		tokentype.TOKEN_STAR:          {nil, parser.binary, precedence.PREC_FACTOR},
-		tokentype.TOKEN_BANG:          {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_BANG_EQUAL:    {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_EQUAL:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_EQUAL_EQUAL:   {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_GREATER:       {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_GREATER_EQUAL: {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_LESS:          {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_LESS_EQUAL:    {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_IDENTIFIER:    {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_STRING:        {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_NUMBER:        {parser.number, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_AND:           {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_CLASS:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_ELSE:          {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_FALSE:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_FOR:           {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_FUN:           {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_IF:            {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_NIL:           {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_OR:            {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_PRINT:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_RETURN:        {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_SUPER:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_THIS:          {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_TRUE:          {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_VAR:           {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_WHILE:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_ERROR:         {nil, nil, precedence.PREC_NONE},
-		tokentype.TOKEN_EOF:           {nil, nil, precedence.PREC_NONE},
-	}
-
 	rule := rules[token]
 	return &rule
 }
