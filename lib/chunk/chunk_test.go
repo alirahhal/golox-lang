@@ -9,12 +9,13 @@ import (
 
 func TestWriteChunk(t *testing.T) {
 	chunkCreated := chunk.New()
-	var b byte = 10
-	var l = 1
-	chunkCreated.WriteChunk(b, l)
+	var byteToAppend byte = 10
+	var line = 1
+	chunkCreated.WriteChunk(byteToAppend, line)
 
-	if bA, lA := chunkCreated.Code[len(chunkCreated.Code)-1], chunkCreated.Lines[len(chunkCreated.Lines)-1]; bA != b || lA != l {
-		t.Errorf("chunk.WriteChunk(%v, %v) failed, expected to append %v to Code, and %v to Line, got %v, %v respectively", b, l, b, l, bA, lA)
+	if bA, lA := chunkCreated.Code[len(chunkCreated.Code)-1], chunkCreated.Lines[len(chunkCreated.Lines)-1]; bA != byteToAppend || lA != line {
+		t.Errorf("chunk.WriteChunk(%v, %v) failed, expected to append %v to Code, and %v to Line, got %v, %v respectively",
+			byteToAppend, line, byteToAppend, line, bA, lA)
 	}
 }
 
