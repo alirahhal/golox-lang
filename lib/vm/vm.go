@@ -18,22 +18,26 @@ const (
 	STACK_INITIAL_SIZE int = 256
 )
 
+// VM struct
 type VM struct {
 	Chunk *chunk.Chunk
 	IP    *byte
 	Stack []value.Value
 }
 
+// New return a pointer to a new VM struct
 func New() *VM {
 	vm := new(VM)
-	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
+	// vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
 	return vm
 }
 
+// InitVM intitialze VM struct
 func (vm *VM) InitVM() {
 	vm.resetStack()
 }
 
+// Interpret takes a source code and fires off the VM execution pipeline
 func (vm *VM) Interpret(source string) interpretresult.InterpretResult {
 	chunk := chunk.New()
 
@@ -108,10 +112,12 @@ func (vm *VM) run() interpretresult.InterpretResult {
 	}
 }
 
+// Push appends a new Value to the vm`s stack
 func (vm *VM) Push(val value.Value) {
 	vm.Stack = append(vm.Stack, val)
 }
 
+// Pop pops a Value from the vm`s stack
 func (vm *VM) Pop() value.Value {
 	var x value.Value
 	// todo: find a way for shrinking the stack based on a specific algo

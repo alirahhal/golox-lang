@@ -12,7 +12,7 @@ type Chunk struct {
 	Constants value.ValueArray
 }
 
-// New return a pointer to a new chunk struct
+// New return a pointer to a new Chunk struct
 func New() *Chunk {
 	chunk := new(Chunk)
 	chunk.Code = make([]byte, 0)
