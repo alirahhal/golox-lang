@@ -149,12 +149,12 @@ func (vm *VM) readConstantLong() value.Value {
 	return vm.Chunk.Constants.Values[constantAddress]
 }
 
-func (vm *VM) resetStack() {
-	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
-}
-
 func (vm *VM) binaryOP(op func(a, b value.Value) value.Value) {
 	b := vm.Pop()
 	a := vm.Pop()
 	vm.Push(op(a, b))
+}
+
+func (vm *VM) resetStack() {
+	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
 }
