@@ -1,14 +1,13 @@
-package chunk_test
+package chunk
 
 import (
-	"golanglox/lib/chunk"
 	"golanglox/lib/chunk/opcode"
 	"golanglox/lib/value"
 	"testing"
 )
 
 func TestWriteChunk(t *testing.T) {
-	chunkCreated := chunk.New()
+	chunkCreated := New()
 	var byteToAppend byte = 10
 	var line = 1
 	chunkCreated.WriteChunk(byteToAppend, line)
@@ -22,7 +21,7 @@ func TestWriteChunk(t *testing.T) {
 func TestWriteConstant(t *testing.T) {
 	// test for constant less than 256 elements
 	t.Run("index<256", func(t *testing.T) {
-		chunkCreated := chunk.New()
+		chunkCreated := New()
 
 		chunkCreated.WriteConstant(10, 0)
 		if op := opcode.OpCode(chunkCreated.Code[len(chunkCreated.Code)-2]); op != opcode.OP_CONSTANT {
@@ -32,7 +31,7 @@ func TestWriteConstant(t *testing.T) {
 
 	// test for constant greater than 256 elements
 	t.Run("index>=256", func(t *testing.T) {
-		chunkCreated := chunk.New()
+		chunkCreated := New()
 
 		for i := 0; i < 257; i++ {
 			chunkCreated.WriteConstant(value.Value(i), 0)

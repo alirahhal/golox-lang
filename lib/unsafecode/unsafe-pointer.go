@@ -4,8 +4,6 @@ import (
 	"unsafe"
 )
 
-type any interface{}
-
 func Increment(pointer *byte) *byte {
 	// Convert a pointer to an byte to an unsafe.Pointer, then to a uintptr.
 	addressHolder := uintptr(unsafe.Pointer(pointer))

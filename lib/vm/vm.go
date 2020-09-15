@@ -74,14 +74,14 @@ func (vm *VM) run() interpretresult.InterpretResult {
 		switch instruction = vm.readByte(); instruction {
 		case byte(opcode.OP_CONSTANT):
 			var constant value.Value = vm.readConstant()
-			vm.Push(constant)
+			vm.push(constant)
 			break
 		case byte(opcode.OP_CONSTANT_LONG):
 			var constant value.Value = vm.readConstantLong()
-			vm.Push(constant)
+			vm.push(constant)
 			break
 		case byte(opcode.OP_NEGATE):
-			vm.Push(-vm.Pop())
+			vm.push(-vm.pop())
 			break
 		case byte(opcode.OP_ADD):
 			vm.binaryOP(func(a, b value.Value) value.Value {
@@ -104,7 +104,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			})
 			break
 		case byte(opcode.OP_RETURN):
-			poped := vm.Pop()
+			poped := vm.pop()
 			(&poped).PrintValue()
 			fmt.Print("\n")
 			return interpretresult.INTERPRET_OK
@@ -113,12 +113,12 @@ func (vm *VM) run() interpretresult.InterpretResult {
 }
 
 // Push appends a new Value to the vm`s stack
-func (vm *VM) Push(val value.Value) {
+func (vm *VM) push(val value.Value) {
 	vm.Stack = append(vm.Stack, val)
 }
 
 // Pop pops a Value from the vm`s stack
-func (vm *VM) Pop() value.Value {
+func (vm *VM) pop() value.Value {
 	var x value.Value
 	// todo: find a way for shrinking the stack based on a specific algo
 	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
@@ -150,9 +150,9 @@ func (vm *VM) readConstantLong() value.Value {
 }
 
 func (vm *VM) binaryOP(op func(a, b value.Value) value.Value) {
-	b := vm.Pop()
-	a := vm.Pop()
-	vm.Push(op(a, b))
+	b := vm.pop()
+	a := vm.pop()
+	vm.push(op(a, b))
 }
 
 func (vm *VM) resetStack() {

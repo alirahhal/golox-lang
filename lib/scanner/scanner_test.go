@@ -1,7 +1,6 @@
-package scanner_test
+package scanner
 
 import (
-	"golanglox/lib/scanner"
 	"golanglox/lib/scanner/token/tokentype"
 	"testing"
 )
@@ -9,7 +8,7 @@ import (
 func TestScanToken(t *testing.T) {
 	// test for skipping leading whitespaces
 	t.Run("skip leading whitespaces", func(t *testing.T) {
-		s := scanner.New()
+		s := New()
 		s.InitScanner(" \r\t hello world")
 
 		s.ScanToken()
@@ -20,7 +19,7 @@ func TestScanToken(t *testing.T) {
 
 	// test for incementing line
 	t.Run("increment line", func(t *testing.T) {
-		s := scanner.New()
+		s := New()
 		s.InitScanner(" \n hello world")
 
 		s.ScanToken()
@@ -244,7 +243,7 @@ func TestScanToken(t *testing.T) {
 		}
 
 		for _, item := range dataItems {
-			s := scanner.New()
+			s := New()
 			s.InitScanner(item.source)
 			tkn := s.ScanToken()
 
