@@ -11,6 +11,7 @@ import (
 	"golanglox/lib/scanner/token"
 	"golanglox/lib/scanner/token/tokentype"
 	"golanglox/lib/value"
+	"golanglox/lib/value/valuetype"
 	"os"
 	"strconv"
 )
@@ -191,7 +192,7 @@ func (parser *Parser) number() {
 	val, err := strconv.ParseFloat(parser.Previous.Lexeme, 64)
 	if err != nil {
 	}
-	parser.emitConstant(value.Value(val))
+	parser.emitConstant(value.New(valuetype.VAL_NUMBER, val))
 }
 
 func (parser *Parser) unary() {

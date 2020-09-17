@@ -10,8 +10,9 @@ import (
 	"golanglox/lib/debug"
 	"golanglox/lib/unsafecode"
 	"golanglox/lib/value"
+	"golanglox/lib/value/valuetype"
 	"golanglox/lib/vm/interpretresult"
-	"unsafe"
+	"os"
 )
 
 const (
@@ -67,43 +68,68 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				fmt.Print(" ]")
 			}
 			fmt.Print("\n")
-			debug.DisassembleInstruction(vm.Chunk, int(uintptr(unsafe.Pointer(vm.IP))-uintptr(unsafe.Pointer(&(vm.Chunk.Code[0])))))
+			debug.DisassembleInstruction(vm.Chunk, unsafecode.Diff(vm.IP, &(vm.Chunk.Code[0])))
 		}
 
-		var instruction byte
-		switch instruction = vm.readByte(); instruction {
-		case byte(opcode.OP_CONSTANT):
+		var instruction opcode.OpCode
+		switch instruction = opcode.OpCode(vm.readByte()); instruction {
+		case opcode.OP_CONSTANT:
 			var constant value.Value = vm.readConstant()
 			vm.push(constant)
 			break
-		case byte(opcode.OP_CONSTANT_LONG):
+		case opcode.OP_CONSTANT_LONG:
 			var constant value.Value = vm.readConstantLong()
 			vm.push(constant)
 			break
-		case byte(opcode.OP_NEGATE):
-			vm.push(-vm.pop())
+		case opcode.OP_NEGATE:
+			if !vm.peek(0).IsBool() {
+				vm.runtimeError("Operand must be a number")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.push(value.New(valuetype.VAL_NUMBER, -vm.pop().AsNumber()))
 			break
-		case byte(opcode.OP_ADD):
-			vm.binaryOP(func(a, b value.Value) value.Value {
-				return a + b
+		case opcode.OP_ADD:
+			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+				vm.runtimeError("Operands must be numbers.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
+				return a.AsNumber() + b.AsNumber()
 			})
 			break
-		case byte(opcode.OP_SUBTRACT):
-			vm.binaryOP(func(a, b value.Value) value.Value {
-				return a - b
+		case opcode.OP_SUBTRACT:
+			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+				vm.runtimeError("Operands must be numbers.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
+				return a.AsNumber() - b.AsNumber()
 			})
 			break
-		case byte(opcode.OP_MULTIPLY):
-			vm.binaryOP(func(a, b value.Value) value.Value {
-				return a * b
+		case opcode.OP_MULTIPLY:
+			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+				vm.runtimeError("Operands must be numbers.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
+				return a.AsNumber() * b.AsNumber()
 			})
 			break
-		case byte(opcode.OP_DIVIDE):
-			vm.binaryOP(func(a, b value.Value) value.Value {
-				return a / b
+		case opcode.OP_DIVIDE:
+			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+				vm.runtimeError("Operands must be numbers.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
+				return a.AsNumber() / b.AsNumber()
 			})
 			break
-		case byte(opcode.OP_RETURN):
+		case opcode.OP_RETURN:
 			poped := vm.pop()
 			(&poped).PrintValue()
 			fmt.Print("\n")
@@ -123,6 +149,10 @@ func (vm *VM) pop() value.Value {
 	// todo: find a way for shrinking the stack based on a specific algo
 	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
 	return x
+}
+
+func (vm *VM) peek(distance int) value.Value {
+	return vm.Stack[len(vm.Stack)-1-distance]
 }
 
 func (vm *VM) readByte() byte {
@@ -149,12 +179,23 @@ func (vm *VM) readConstantLong() value.Value {
 	return vm.Chunk.Constants.Values[constantAddress]
 }
 
-func (vm *VM) binaryOP(op func(a, b value.Value) value.Value) {
+func (vm *VM) binaryOP(valueType valuetype.ValueType, op func(a, b value.Value) interface{}) {
 	b := vm.pop()
 	a := vm.pop()
-	vm.push(op(a, b))
+	vm.push(value.New(valueType, op(a, b)))
 }
 
 func (vm *VM) resetStack() {
 	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
+}
+
+func (vm *VM) runtimeError(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	fmt.Println()
+
+	offset := unsafecode.Diff(vm.IP, &(vm.Chunk.Code[0]))
+	line := vm.Chunk.Lines[offset]
+	fmt.Fprintf(os.Stderr, "[line %d] in script\n", line)
+
+	vm.resetStack()
 }

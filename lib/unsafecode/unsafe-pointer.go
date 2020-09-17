@@ -14,3 +14,7 @@ func Increment(pointer *byte) *byte {
 	// Convert a uintptr to an unsafe.Pointer, then to a pointer to an byte.
 	return (*byte)(unsafe.Pointer(addressHolder))
 }
+
+func Diff(p1 *byte, p2 *byte) int {
+	return int(uintptr(unsafe.Pointer(p1)) - uintptr(unsafe.Pointer(p2)))
+}
