@@ -43,6 +43,8 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_MULTIPLY", offset)
 	case opcode.OP_DIVIDE:
 		return simpleInstruction("OP_DIVIDE", offset)
+	case opcode.OP_NOT:
+		return simpleInstruction("OP_NOT", offset)
 	case opcode.OP_NEGATE:
 		return simpleInstruction("OP_NEGATE", offset)
 	case opcode.OP_RETURN:

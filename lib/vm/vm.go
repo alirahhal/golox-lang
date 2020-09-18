@@ -138,6 +138,9 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return a.AsNumber() / b.AsNumber()
 			})
 			break
+		case opcode.OP_NOT:
+			vm.push(value.New(valuetype.VAL_BOOL, isFalsey(vm.pop())))
+			break
 		case opcode.OP_RETURN:
 			poped := vm.pop()
 			(&poped).PrintValue()
@@ -162,6 +165,10 @@ func (vm *VM) pop() value.Value {
 
 func (vm *VM) peek(distance int) value.Value {
 	return vm.Stack[len(vm.Stack)-1-distance]
+}
+
+func isFalsey(val value.Value) bool {
+	return val.IsNil() || (val.IsBool() && !val.AsBool())
 }
 
 func (vm *VM) readByte() byte {

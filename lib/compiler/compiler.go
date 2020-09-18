@@ -62,7 +62,7 @@ func init() {
 	rules[tokentype.TOKEN_SEMICOLON] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_SLASH] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
 	rules[tokentype.TOKEN_STAR] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
-	rules[tokentype.TOKEN_BANG] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_BANG] = ParseRule{(*Parser).unary, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -218,6 +218,9 @@ func (parser *Parser) unary() {
 	parser.parsePrecedence(precedence.PREC_UNARY)
 
 	switch operatorType {
+	case tokentype.TOKEN_BANG:
+		parser.emitByte(byte(opcode.OP_NOT))
+		break
 	case tokentype.TOKEN_MINUS:
 		parser.emitByte(byte(opcode.OP_NEGATE))
 		break
