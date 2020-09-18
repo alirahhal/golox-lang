@@ -81,6 +81,15 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			var constant value.Value = vm.readConstantLong()
 			vm.push(constant)
 			break
+		case opcode.OP_NIL:
+			vm.push(value.New(valuetype.VAL_NIL, nil))
+			break
+		case opcode.OP_TRUE:
+			vm.push(value.New(valuetype.VAL_BOOL, true))
+			break
+		case opcode.OP_FALSE:
+			vm.push(value.New(valuetype.VAL_BOOL, false))
+			break
 		case opcode.OP_NEGATE:
 			if !vm.peek(0).IsBool() {
 				vm.runtimeError("Operand must be a number")

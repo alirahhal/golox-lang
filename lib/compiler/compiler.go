@@ -76,17 +76,17 @@ func init() {
 	rules[tokentype.TOKEN_AND] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_CLASS] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_ELSE] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_FALSE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_FALSE] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_FOR] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_FUN] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_IF] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_NIL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_NIL] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_OR] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_PRINT] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_RETURN] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_SUPER] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_THIS] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_TRUE] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_TRUE] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_VAR] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_WHILE] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_ERROR] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -177,6 +177,22 @@ func (parser *Parser) binary() {
 		break
 	case tokentype.TOKEN_SLASH:
 		parser.emitByte(byte(opcode.OP_DIVIDE))
+		break
+	default:
+		return
+	}
+}
+
+func (parser *Parser) literal() {
+	switch parser.Previous.Type {
+	case tokentype.TOKEN_FALSE:
+		parser.emitByte(byte(opcode.OP_FALSE))
+		break
+	case tokentype.TOKEN_NIL:
+		parser.emitByte(byte(opcode.OP_NIL))
+		break
+	case tokentype.TOKEN_TRUE:
+		parser.emitByte(byte(opcode.OP_TRUE))
 		break
 	default:
 		return

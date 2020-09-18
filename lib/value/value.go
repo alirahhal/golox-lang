@@ -47,5 +47,19 @@ func (valueArray *ValueArray) FreeValueArray() {
 }
 
 func (value Value) PrintValue() {
-	fmt.Printf("%g", value.AsNumber())
+	switch value.Type {
+	case valuetype.VAL_BOOL:
+		if value.AsBool() {
+			fmt.Printf("true")
+		} else {
+			fmt.Printf("false")
+		}
+		break
+	case valuetype.VAL_NIL:
+		fmt.Printf("nil")
+		break
+	case valuetype.VAL_NUMBER:
+		fmt.Printf("%g", value.AsNumber())
+		break
+	}
 }
