@@ -63,13 +63,13 @@ func init() {
 	rules[tokentype.TOKEN_SLASH] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
 	rules[tokentype.TOKEN_STAR] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
 	rules[tokentype.TOKEN_BANG] = ParseRule{(*Parser).unary, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_GREATER] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_LESS] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_GREATER] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LESS] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_STRING] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_NUMBER] = ParseRule{(*Parser).number, nil, precedence.PREC_NONE}
@@ -166,6 +166,24 @@ func (parser *Parser) binary() {
 	parser.parsePrecedence(precedence.Precedence(rule.Precedence + 1))
 
 	switch operatorType {
+	case tokentype.TOKEN_BANG_EQUAL:
+		parser.emitBytes(byte(opcode.OP_EQUAL), byte(opcode.OP_NOT))
+		break
+	case tokentype.TOKEN_EQUAL_EQUAL:
+		parser.emitByte(byte(opcode.OP_EQUAL))
+		break
+	case tokentype.TOKEN_GREATER:
+		parser.emitByte(byte(opcode.OP_GREATER))
+		break
+	case tokentype.TOKEN_GREATER_EQUAL:
+		parser.emitBytes(byte(opcode.OP_LESS), byte(opcode.OP_NOT))
+		break
+	case tokentype.TOKEN_LESS:
+		parser.emitByte(byte(opcode.OP_LESS))
+		break
+	case tokentype.TOKEN_LESS_EQUAL:
+		parser.emitBytes(byte(opcode.OP_GREATER), byte(opcode.OP_NOT))
+		break
 	case tokentype.TOKEN_PLUS:
 		parser.emitByte(byte(opcode.OP_ADD))
 		break
