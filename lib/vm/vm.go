@@ -90,8 +90,33 @@ func (vm *VM) run() interpretresult.InterpretResult {
 		case opcode.OP_FALSE:
 			vm.push(value.New(valuetype.VAL_BOOL, false))
 			break
+		case opcode.OP_EQUAL:
+			b := vm.pop()
+			a := vm.pop()
+			vm.push(value.New(valuetype.VAL_BOOL, value.ValuesEqual(a, b)))
+			break
+		case opcode.OP_GREATER:
+			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+				vm.runtimeError("Operands must be numbers.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.binaryOP(valuetype.VAL_BOOL, func(a, b value.Value) interface{} {
+				return a.AsNumber() > b.AsNumber()
+			})
+			break
+		case opcode.OP_LESS:
+			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+				vm.runtimeError("Operands must be numbers.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.binaryOP(valuetype.VAL_BOOL, func(a, b value.Value) interface{} {
+				return a.AsNumber() < b.AsNumber()
+			})
+			break
 		case opcode.OP_NEGATE:
-			if !vm.peek(0).IsBool() {
+			if !vm.peek(0).IsNumber() {
 				vm.runtimeError("Operand must be a number")
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
@@ -106,16 +131,6 @@ func (vm *VM) run() interpretresult.InterpretResult {
 
 			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
 				return a.AsNumber() + b.AsNumber()
-			})
-			break
-		case opcode.OP_SUBTRACT:
-			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
-				vm.runtimeError("Operands must be numbers.")
-				return interpretresult.INTERPRET_RUNTIME_ERROR
-			}
-
-			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
-				return a.AsNumber() - b.AsNumber()
 			})
 			break
 		case opcode.OP_MULTIPLY:

@@ -35,10 +35,14 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_TRUE", offset)
 	case opcode.OP_FALSE:
 		return simpleInstruction("OP_FALSE", offset)
+	case opcode.OP_EQUAL:
+		return simpleInstruction("OP_EQUAL", offset)
+	case opcode.OP_GREATER:
+		return simpleInstruction("OP_GREATER", offset)
+	case opcode.OP_LESS:
+		return simpleInstruction("OP_LESS", offset)
 	case opcode.OP_ADD:
 		return simpleInstruction("OP_ADD", offset)
-	case opcode.OP_SUBTRACT:
-		return simpleInstruction("OP_SUBTRACT", offset)
 	case opcode.OP_MULTIPLY:
 		return simpleInstruction("OP_MULTIPLY", offset)
 	case opcode.OP_DIVIDE:

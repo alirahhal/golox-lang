@@ -63,12 +63,12 @@ func init() {
 	rules[tokentype.TOKEN_SLASH] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
 	rules[tokentype.TOKEN_STAR] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
 	rules[tokentype.TOKEN_BANG] = ParseRule{(*Parser).unary, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_GREATER] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_LESS] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_EQUALITY}
+	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_EQUALITY}
+	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
+	rules[tokentype.TOKEN_GREATER] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
+	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
+	rules[tokentype.TOKEN_LESS] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_STRING] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -188,7 +188,7 @@ func (parser *Parser) binary() {
 		parser.emitByte(byte(opcode.OP_ADD))
 		break
 	case tokentype.TOKEN_MINUS:
-		parser.emitByte(byte(opcode.OP_SUBTRACT))
+		parser.emitBytes(byte(opcode.OP_NEGATE), byte(opcode.OP_ADD))
 		break
 	case tokentype.TOKEN_STAR:
 		parser.emitByte(byte(opcode.OP_MULTIPLY))
