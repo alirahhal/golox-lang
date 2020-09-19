@@ -7,6 +7,7 @@ import (
 	"golanglox/lib/compiler/precedence"
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
+	"golanglox/lib/object/objecttype"
 	"golanglox/lib/scanner"
 	"golanglox/lib/scanner/token"
 	"golanglox/lib/scanner/token/tokentype"
@@ -71,7 +72,7 @@ func init() {
 	rules[tokentype.TOKEN_LESS] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_STRING] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_STRING] = ParseRule{(*Parser).string, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_NUMBER] = ParseRule{(*Parser).number, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_AND] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_CLASS] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -227,6 +228,12 @@ func (parser *Parser) number() {
 	if err != nil {
 	}
 	parser.emitConstant(value.New(valuetype.VAL_NUMBER, val))
+}
+
+func (parser *Parser) string() {
+	parser.emitConstant(
+		value.NewObjString(
+			&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: parser.Previous.Lexeme[1 : len(parser.Previous.Lexeme)-1]}))
 }
 
 func (parser *Parser) unary() {

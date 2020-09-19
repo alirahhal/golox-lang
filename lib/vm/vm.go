@@ -8,6 +8,7 @@ import (
 	"golanglox/lib/compiler"
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
+	"golanglox/lib/object/objecttype"
 	"golanglox/lib/unsafecode"
 	"golanglox/lib/value"
 	"golanglox/lib/value/valuetype"
@@ -124,14 +125,17 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.push(value.New(valuetype.VAL_NUMBER, -vm.pop().AsNumber()))
 			break
 		case opcode.OP_ADD:
-			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
+			if vm.peek(0).IsString() && vm.peek(1).IsString() {
+				vm.concatenate()
+			} else if vm.peek(0).IsNumber() && vm.peek(1).IsNumber() {
+				vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
+					return a.AsNumber() + b.AsNumber()
+				})
+			} else {
 				vm.runtimeError("Operands must be numbers.")
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 
-			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
-				return a.AsNumber() + b.AsNumber()
-			})
 			break
 		case opcode.OP_MULTIPLY:
 			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
@@ -174,6 +178,7 @@ func (vm *VM) push(val value.Value) {
 func (vm *VM) pop() value.Value {
 	var x value.Value
 	// todo: find a way for shrinking the stack based on a specific algo
+	// & could Effect GC????
 	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
 	return x
 }
@@ -184,6 +189,14 @@ func (vm *VM) peek(distance int) value.Value {
 
 func isFalsey(val value.Value) bool {
 	return val.IsNil() || (val.IsBool() && !val.AsBool())
+}
+
+func (vm *VM) concatenate() {
+	b := vm.pop().AsGoString()
+	a := vm.pop().AsGoString()
+
+	vm.push(value.NewObjString(
+		&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: a + b}))
 }
 
 func (vm *VM) readByte() byte {
