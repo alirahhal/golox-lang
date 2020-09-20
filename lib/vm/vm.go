@@ -30,7 +30,6 @@ type VM struct {
 // New return a pointer to a new VM struct
 func New() *VM {
 	vm := new(VM)
-	// vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
 	return vm
 }
 
