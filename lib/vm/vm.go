@@ -183,7 +183,7 @@ func (vm *VM) pop() value.Value {
 }
 
 func (vm *VM) shrinkStack() {
-	if len(vm.Stack) <= (cap(vm.Stack) / 2) {
+	if cap(vm.Stack) > STACK_INITIAL_SIZE*2 && len(vm.Stack) <= (cap(vm.Stack)/2) {
 		vm.Stack = append([]value.Value(nil), vm.Stack[:len(vm.Stack)]...)
 	}
 }
