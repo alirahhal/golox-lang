@@ -175,11 +175,17 @@ func (vm *VM) push(val value.Value) {
 
 // Pop pops a Value from the vm`s stack
 func (vm *VM) pop() value.Value {
+	defer vm.shrinkStack()
+
 	var x value.Value
-	// todo: find a way for shrinking the stack based on a specific algo
-	// & could Effect GC????
 	x, vm.Stack = vm.Stack[len(vm.Stack)-1], vm.Stack[:len(vm.Stack)-1]
 	return x
+}
+
+func (vm *VM) shrinkStack() {
+	if len(vm.Stack) <= (cap(vm.Stack) / 2) {
+		vm.Stack = append([]value.Value(nil), vm.Stack[:len(vm.Stack)]...)
+	}
 }
 
 func (vm *VM) peek(distance int) value.Value {
