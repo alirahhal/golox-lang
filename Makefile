@@ -1,13 +1,12 @@
 BINARY_DIR=bin
 SRC_NAME=.\main.go
 
+all: run
+
 build:
 	@go build -o $(BINARY_DIR)/golanglox.exe $(SRC_NAME)
 
 run:
-	@.\$(BINARY_DIR)\golanglox.exe $(testfile)
-
-quickrun:
 	@go run ${SRC_NAME} ${testfile}
 
 install: go-get
