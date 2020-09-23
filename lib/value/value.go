@@ -69,7 +69,7 @@ func (value Value) AsString() *ObjString {
 }
 
 func (value Value) AsGoString() string {
-	return ((*ObjString)(unsafe.Pointer(value.AsObj()))).String
+	return value.AsString().String
 }
 
 func (value Value) isObjType(objType objecttype.ObjType) bool {
@@ -130,9 +130,13 @@ func ValuesEqual(a Value, b Value) bool {
 	case valuetype.VAL_NUMBER:
 		return a.AsNumber() == b.AsNumber()
 	case valuetype.VAL_OBJ:
-		aString := a.AsGoString()
-		bString := b.AsGoString()
-		return aString == bString
+		aObj := a.AsObj()
+		bObj := b.AsObj()
+		if (aObj.Type == objecttype.OBJ_STRING) {
+			return a.AsGoString() == b.AsGoString()
+		} else {
+			return aObj == bObj
+		}
 	default:
 		return false
 	}
