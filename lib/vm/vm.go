@@ -115,14 +115,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return a.AsNumber() < b.AsNumber()
 			})
 			break
-		case opcode.OP_NEGATE:
-			if !vm.peek(0).IsNumber() {
-				vm.runtimeError("Operand must be a number")
-				return interpretresult.INTERPRET_RUNTIME_ERROR
-			}
-
-			vm.push(value.New(valuetype.VAL_NUMBER, -vm.pop().AsNumber()))
-			break
+		
 		case opcode.OP_ADD:
 			if vm.peek(0).IsString() && vm.peek(1).IsString() {
 				vm.concatenate()
@@ -159,10 +152,20 @@ func (vm *VM) run() interpretresult.InterpretResult {
 		case opcode.OP_NOT:
 			vm.push(value.New(valuetype.VAL_BOOL, isFalsey(vm.pop())))
 			break
+		case opcode.OP_NEGATE:
+			if !vm.peek(0).IsNumber() {
+				vm.runtimeError("Operand must be a number")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.push(value.New(valuetype.VAL_NUMBER, -vm.pop().AsNumber()))
+			break
+		case opcode.OP_PRINT:
+			vm.pop().PrintValue()
+			fmt.Printf("\n")
+			break
 		case opcode.OP_RETURN:
-			poped := vm.pop()
-			(&poped).PrintValue()
-			fmt.Print("\n")
+			// Exit interpreter
 			return interpretresult.INTERPRET_OK
 		}
 	}

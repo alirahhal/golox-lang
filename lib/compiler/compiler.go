@@ -102,8 +102,11 @@ func Compile(source string, chunk *chunk.Chunk) bool {
 	parser := New(scanner, chunk)
 
 	parser.advance()
-	parser.expression()
-	parser.consume(tokentype.TOKEN_EOF, "Expect end of expression.")
+	
+	for !parser.match(tokentype.TOKEN_EOF) {
+		parser.declaration()
+	}
+
 	parser.endCompiler()
 
 	return !parser.HadError
@@ -129,6 +132,18 @@ func (parser *Parser) consume(tokenType tokentype.TokenType, message string) {
 	}
 
 	parser.errorAtCurrent(message)
+}
+
+func (parser *Parser) check(tokenType tokentype.TokenType) bool {
+	return parser.Current.Type == tokenType
+}
+
+func (parser *Parser) match(tokenType tokentype.TokenType) bool {
+	if !parser.check(tokenType) {
+		return false
+	}
+	parser.advance()
+	return true
 }
 
 func (parser *Parser) emitByte(b byte) {
@@ -284,6 +299,22 @@ func (parser *Parser) getRule(token tokentype.TokenType) *ParseRule {
 
 func (parser *Parser) expression() {
 	parser.parsePrecedence(precedence.PREC_ASSIGNMENT)
+}
+
+func (parser *Parser) printStatement() {
+	parser.expression()
+	parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after value.")
+	parser.emitByte(byte(opcode.OP_PRINT))
+}
+
+func (parser *Parser) declaration() {
+	parser.statement()
+}
+
+func (parser *Parser) statement() {
+	if (parser.match(tokentype.TOKEN_PRINT)) {
+		parser.printStatement()
+	}
 }
 
 func (parser *Parser) currentChunk() *chunk.Chunk {
