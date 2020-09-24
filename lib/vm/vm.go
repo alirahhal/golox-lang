@@ -25,6 +25,7 @@ type VM struct {
 	Chunk *chunk.Chunk
 	IP    *byte
 	Stack []value.Value
+	Globals map[string]value.Value
 }
 
 // New return a pointer to a new VM struct
@@ -89,6 +90,55 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			break
 		case opcode.OP_FALSE:
 			vm.push(value.New(valuetype.VAL_BOOL, false))
+			break
+		case opcode.OP_POP:
+			vm.pop()
+			break
+		case opcode.OP_GET_GLOBAL:
+			name := vm.readConstant().AsGoString()
+			val, present := vm.Globals[name]
+			if !present {
+				vm.runtimeError("Undefined variable '%s'.", name)
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+			vm.push(val)
+			break
+		case opcode.OP_GET_GLOBAL_LONG:
+			name := vm.readConstantLong().AsGoString()
+			val, present := vm.Globals[name]
+			if !present {
+				vm.runtimeError("Undefined variable '%s'.", name)
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+			vm.push(val)
+			break
+		case opcode.OP_DEFINE_GLOBAL:
+			name := vm.readConstant().AsGoString()
+			vm.Globals[name] = vm.peek(0)
+			vm.pop()
+			break
+		case opcode.OP_DEFINE_GLOBAL_LONG:
+			name := vm.readConstantLong().AsGoString()
+			vm.Globals[name] = vm.peek(0)
+			vm.pop()
+			break
+		case opcode.OP_SET_GLOBAL:
+			name := vm.readConstant().AsGoString()
+			_, present := vm.Globals[name]
+			if !present {
+				vm.runtimeError("Undefined variable '%s'.", name)
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+			vm.Globals[name] = vm.peek(0)
+			break
+		case opcode.OP_SET_GLOBAL_LONG:
+			name := vm.readConstantLong().AsGoString()
+			_, present := vm.Globals[name]
+			if !present {
+				vm.runtimeError("Undefined variable '%s'.", name)
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+			vm.Globals[name] = vm.peek(0)
 			break
 		case opcode.OP_EQUAL:
 			b := vm.pop()
@@ -239,6 +289,7 @@ func (vm *VM) binaryOP(valueType valuetype.ValueType, op func(a, b value.Value) 
 
 func (vm *VM) resetStack() {
 	vm.Stack = make([]value.Value, 0, STACK_INITIAL_SIZE)
+	vm.Globals = make(map[string]value.Value)
 }
 
 func (vm *VM) runtimeError(format string, args ...interface{}) {

@@ -28,7 +28,7 @@ func (chunk *Chunk) WriteChunk(b byte, line int) {
 
 // WriteConstant append a new constant to the chunk
 func (chunk *Chunk) WriteConstant(value value.Value, line int) {
-	index := chunk.addConstant(value)
+	index := chunk.AddConstant(value)
 
 	if index < 256 {
 		chunk.WriteChunk(byte(opcode.OP_CONSTANT), line)
@@ -48,7 +48,7 @@ func (chunk *Chunk) FreeChunk() {
 	chunk.Constants.FreeValueArray()
 }
 
-func (chunk *Chunk) addConstant(value value.Value) int {
+func (chunk *Chunk) AddConstant(value value.Value) int {
 	chunk.Constants.WriteValueArray(value)
 	return len(chunk.Constants.Values) - 1
 }

@@ -35,6 +35,20 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_TRUE", offset)
 	case opcode.OP_FALSE:
 		return simpleInstruction("OP_FALSE", offset)
+	case opcode.OP_POP:
+		return simpleInstruction("OP_POP", offset)
+	case opcode.OP_GET_GLOBAL:
+		return constantInstruction("OP_GET_GLOBAL", chunk, offset)
+	case opcode.OP_GET_GLOBAL_LONG:
+		return longConstantInstruction("OP_GET_GLOBAL_LONG", chunk, offset)
+	case opcode.OP_DEFINE_GLOBAL:
+		return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset)
+	case opcode.OP_DEFINE_GLOBAL_LONG:
+		return longConstantInstruction("OP_DEFINE_GLOBAL_LONG", chunk, offset)
+	case opcode.OP_SET_GLOBAL:
+		return constantInstruction("OP_SET_GLOBAL", chunk, offset)
+	case opcode.OP_SET_GLOBAL_LONG:
+		return longConstantInstruction("OP_SET_GLOBAL_LONG", chunk, offset)
 	case opcode.OP_EQUAL:
 		return simpleInstruction("OP_EQUAL", offset)
 	case opcode.OP_GREATER:

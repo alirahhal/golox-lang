@@ -29,7 +29,7 @@ type Parser struct {
 }
 
 // ParseFn func
-type ParseFn func(receiver *Parser)
+type ParseFn func(receiver *Parser, canAssign bool)
 
 // ParseRule struct
 type ParseRule struct {
@@ -71,7 +71,7 @@ func init() {
 	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_LESS] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{(*Parser).variable, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_STRING] = ParseRule{(*Parser).string, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_NUMBER] = ParseRule{(*Parser).number, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_AND] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -173,7 +173,7 @@ func (parser *Parser) endCompiler() {
 	}
 }
 
-func (parser *Parser) binary() {
+func (parser *Parser) binary(canAssign bool) {
 	// Remember the operator
 	operatorType := parser.Previous.Type
 
@@ -217,7 +217,7 @@ func (parser *Parser) binary() {
 	}
 }
 
-func (parser *Parser) literal() {
+func (parser *Parser) literal(canAssign bool) {
 	switch parser.Previous.Type {
 	case tokentype.TOKEN_FALSE:
 		parser.emitByte(byte(opcode.OP_FALSE))
@@ -233,25 +233,54 @@ func (parser *Parser) literal() {
 	}
 }
 
-func (parser *Parser) grouping() {
+func (parser *Parser) grouping(canAssign bool) {
 	parser.expression()
 	parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after expression.")
 }
 
-func (parser *Parser) number() {
+func (parser *Parser) number(canAssign bool) {
 	val, err := strconv.ParseFloat(parser.Previous.Lexeme, 64)
 	if err != nil {
 	}
 	parser.emitConstant(value.New(valuetype.VAL_NUMBER, val))
 }
 
-func (parser *Parser) string() {
+func (parser *Parser) string(canAssign bool) {
 	parser.emitConstant(
 		value.NewObjString(
 			&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: parser.Previous.Lexeme[1 : len(parser.Previous.Lexeme)-1]}))
 }
 
-func (parser *Parser) unary() {
+func (parser *Parser) namedVariable(name token.Token, canAssign bool) {
+	arg := parser.identifierConstant(&name)
+	
+	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
+		parser.expression()
+		if arg < 256 {
+			parser.emitBytes(byte(opcode.OP_SET_GLOBAL), byte(arg))
+		} else {
+			parser.emitByte(byte(opcode.OP_SET_GLOBAL_LONG))
+			parser.emitByte(byte(arg&0xff))
+			parser.emitByte(byte((arg>>8)&0xff))
+			parser.emitByte(byte((arg>>16)&0xff))
+		}
+	} else {
+		if arg < 256 {
+			parser.emitBytes(byte(opcode.OP_GET_GLOBAL), byte(arg))
+		} else {
+			parser.emitByte(byte(opcode.OP_GET_GLOBAL_LONG))
+			parser.emitByte(byte(arg&0xff))
+			parser.emitByte(byte((arg>>8)&0xff))
+			parser.emitByte(byte((arg>>16)&0xff))
+		}
+	}
+}
+
+func (parser *Parser) variable(canAssign bool) {
+	parser.namedVariable(parser.Previous, canAssign)
+}
+
+func (parser *Parser) unary(canAssign bool) {
 	operatorType := parser.Previous.Type
 
 	// Compile the operand
@@ -269,7 +298,7 @@ func (parser *Parser) unary() {
 	}
 }
 
-func (parser *Parser) parsePrecedence(precedence precedence.Precedence) {
+func (parser *Parser) parsePrecedence(preced precedence.Precedence) {
 	parser.advance()
 	prefixRule := parser.getRule(parser.Previous.Type).Prefix
 	if prefixRule == nil {
@@ -277,18 +306,38 @@ func (parser *Parser) parsePrecedence(precedence precedence.Precedence) {
 		return
 	}
 
-	prefixRule(parser)
+	canAssign := preced <= precedence.PREC_ASSIGNMENT
+	prefixRule(parser, canAssign)
 
-	for precedence <= parser.getRule(parser.Current.Type).Precedence {
+	for preced <= parser.getRule(parser.Current.Type).Precedence {
 		parser.advance()
 		infixRule := parser.getRule(parser.Previous.Type).Infix
-		// Not sure!!!
-		if infixRule == nil {
-			parser.error("Expect Expression.")
-			return
-		}
-		//
-		infixRule(parser)
+		infixRule(parser, canAssign)
+	}
+
+	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
+		parser.error("Invalid assignmet target.")
+	}
+}
+
+func (parser *Parser) identifierConstant(name *token.Token) int {
+	return parser.currentChunk().AddConstant(value.NewObjString(
+		&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: name.Lexeme}))
+}
+
+func (parser *Parser) parserVariable(errorMessage string) int {
+	parser.consume(tokentype.TOKEN_IDENTIFIER, errorMessage)
+	return parser.identifierConstant(&parser.Previous)
+}
+
+func (parser *Parser) defineVariable(global int) {
+	if global < 256 {
+		parser.emitBytes(byte(opcode.OP_DEFINE_GLOBAL), byte(global))
+	} else {
+		parser.emitByte(byte(opcode.OP_DEFINE_GLOBAL_LONG))
+		parser.emitByte(byte(global&0xff))
+		parser.emitByte(byte((global>>8)&0xff))
+		parser.emitByte(byte((global>>16)&0xff))
 	}
 }
 
@@ -301,19 +350,75 @@ func (parser *Parser) expression() {
 	parser.parsePrecedence(precedence.PREC_ASSIGNMENT)
 }
 
+func (parser *Parser) varDeclaration() {
+	global := parser.parserVariable("Expect variable name.")
+
+	if parser.match(tokentype.TOKEN_EQUAL) {
+		parser.expression()
+	} else {
+		parser.emitByte(byte(opcode.OP_NIL))
+	}
+	parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after variable declaration.")
+
+	parser.defineVariable(global)
+}
+
+func (parser *Parser) expressionStatement() {
+	parser.expression()
+	parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after expression.")
+	parser.emitByte(byte(opcode.OP_POP))
+}
+
 func (parser *Parser) printStatement() {
 	parser.expression()
 	parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after value.")
 	parser.emitByte(byte(opcode.OP_PRINT))
 }
 
+func (parser *Parser) synchronize() {
+	parser.PanicMode = false
+	for parser.Current.Type != tokentype.TOKEN_EOF {
+		if(parser.Previous.Type == tokentype.TOKEN_SEMICOLON) {
+			return
+		}
+
+		switch parser.Current.Type {
+		case tokentype.TOKEN_CLASS:
+		case tokentype.TOKEN_FUN:
+		case tokentype.TOKEN_VAR:
+		case tokentype.TOKEN_FOR:
+		case tokentype.TOKEN_IF:
+		case tokentype.TOKEN_WHILE:
+		case tokentype.TOKEN_PRINT:
+		case tokentype.TOKEN_RETURN:
+		  return;
+  
+		default:
+		  // Do nothing.
+		  ;
+		}
+
+		parser.advance()
+	}
+}
+
 func (parser *Parser) declaration() {
-	parser.statement()
+	if parser.match(tokentype.TOKEN_VAR) {
+		parser.varDeclaration()
+	} else {
+		parser.statement()
+	}
+
+	if parser.PanicMode {
+		parser.synchronize()
+	}
 }
 
 func (parser *Parser) statement() {
 	if (parser.match(tokentype.TOKEN_PRINT)) {
 		parser.printStatement()
+	} else {
+		parser.expressionStatement()
 	}
 }
 
