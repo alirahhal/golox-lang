@@ -37,6 +37,14 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_FALSE", offset)
 	case opcode.OP_POP:
 		return simpleInstruction("OP_POP", offset)
+	case opcode.OP_GET_LOCAL:
+		return byteInstruction("OP_GET_LOCAL", chunk, offset)
+	case opcode.OP_GET_LOCAL_LONG:
+		return byteInstructionLong("OP_GET_LOCAL_LONG", chunk, offset)
+	case opcode.OP_SET_LOCAL:
+		return byteInstruction("OP_SET_LOCAL", chunk, offset)
+	case opcode.OP_SET_LOCAL_LONG:
+		return byteInstructionLong("OP_SET_LOCAL_LONG", chunk, offset)
 	case opcode.OP_GET_GLOBAL:
 		return constantInstruction("OP_GET_GLOBAL", chunk, offset)
 	case opcode.OP_GET_GLOBAL_LONG:
@@ -78,6 +86,20 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 func simpleInstruction(name string, offset int) int {
 	fmt.Println(name)
 	return offset + 1
+}
+
+func byteInstruction(name string, chunk *chunk.Chunk, offset int) int {
+	slot := chunk.Code[offset + 1]
+	fmt.Printf("%s %4d\n", name, slot)
+	return offset + 2
+}
+
+func byteInstructionLong(name string, chunk *chunk.Chunk, offset int) int {
+	bytes := make([]byte, 4)
+	copy(bytes, chunk.Code[offset+1:offset+4])
+	var slot uint32 = binary.LittleEndian.Uint32(bytes)
+	fmt.Printf("%s %4d\n", name, slot)
+	return offset + 4
 }
 
 func constantInstruction(name string, chunk *chunk.Chunk, offset int) int {

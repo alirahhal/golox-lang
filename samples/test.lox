@@ -1,4 +1,14 @@
 var a = 2;
-var x = 5;
 
-print a + x;
+print a + 3;
+
+{
+var b = 5;
+var c;
+c = 5;
+
+    {
+        print (b + c);
+    }
+
+}

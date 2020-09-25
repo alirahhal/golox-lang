@@ -94,6 +94,22 @@ func (vm *VM) run() interpretresult.InterpretResult {
 		case opcode.OP_POP:
 			vm.pop()
 			break
+		case opcode.OP_GET_LOCAL:
+			slot := vm.readByte()
+			vm.push(vm.Stack[slot])
+			break
+		case opcode.OP_GET_LOCAL_LONG:
+			slot := vm.readLong()
+			vm.push(vm.Stack[slot])
+			break
+		case opcode.OP_SET_LOCAL:
+			slot := vm.readByte()
+			vm.Stack[slot] = vm.peek(0)
+			break
+		case opcode.OP_SET_LOCAL_LONG:
+			slot := vm.readLong()
+			vm.Stack[slot] = vm.peek(0)
+			break
 		case opcode.OP_GET_GLOBAL:
 			name := vm.readConstant().AsGoString()
 			val, present := vm.Globals[name]
@@ -262,6 +278,18 @@ func (vm *VM) readByte() byte {
 	vm.IP = unsafecode.Increment(vm.IP)
 
 	return returnVal
+}
+
+func (vm *VM) readLong() uint32 {
+	bytes := make([]byte, 0)
+	for i := 0; i < 4; i++ {
+		if i == 3 {
+			bytes = append(bytes, 0)
+			break
+		}
+		bytes = append(bytes, vm.readByte())
+	}
+	return binary.LittleEndian.Uint32(bytes)
 }
 
 func (vm *VM) readConstant() value.Value {

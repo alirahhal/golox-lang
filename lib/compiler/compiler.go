@@ -23,9 +23,22 @@ type Parser struct {
 	Previous  token.Token
 	HadError  bool
 	PanicMode bool
+	CurrentC *Compiler
 
-	scanner *scanner.Scanner // should be a global variable ???
-	chunk   *chunk.Chunk     // should be a global variable ???
+	scanner *scanner.Scanner
+	chunk   *chunk.Chunk
+}
+
+// Compiler struct
+type Compiler struct {
+	Locals []Local
+	ScopeDepth int
+}
+
+// Local struct
+type Local struct {
+	Name token.Token
+	depth int
 }
 
 // ParseFn func
@@ -41,13 +54,21 @@ type ParseRule struct {
 var rules map[tokentype.TokenType]ParseRule
 
 // New creates a new parser and returns it
-func New(scanner *scanner.Scanner, chunk *chunk.Chunk) *Parser {
+func New(scanner *scanner.Scanner, chunk *chunk.Chunk, compiler *Compiler) *Parser {
 	parser := new(Parser)
 	parser.HadError = false
 	parser.PanicMode = false
 	parser.scanner = scanner
 	parser.chunk = chunk
+	parser.CurrentC = compiler
 	return parser
+}
+
+func newCompiler() *Compiler {
+	compiler := new(Compiler)
+	compiler.ScopeDepth = 0
+	compiler.Locals = make([]Local, 0)
+	return compiler
 }
 
 func init() {
@@ -98,8 +119,9 @@ func init() {
 func Compile(source string, chunk *chunk.Chunk) bool {
 	scanner := scanner.New()
 	scanner.InitScanner(source)
+	compiler := newCompiler()
 
-	parser := New(scanner, chunk)
+	parser := New(scanner, chunk, compiler)
 
 	parser.advance()
 	
@@ -170,6 +192,19 @@ func (parser *Parser) endCompiler() {
 		if !parser.HadError {
 			debug.DisassembleChunk(parser.currentChunk(), "code")
 		}
+	}
+}
+
+func (parser *Parser) beginScope() {
+	parser.CurrentC.ScopeDepth++
+}
+
+func (parser *Parser) endScope() {
+	parser.CurrentC.ScopeDepth--
+
+	for len(parser.CurrentC.Locals) > 0 && parser.CurrentC.Locals[len(parser.CurrentC.Locals)-1].depth > parser.CurrentC.ScopeDepth {
+		parser.emitByte(byte(opcode.OP_POP))
+		parser.CurrentC.Locals = parser.CurrentC.Locals[:len(parser.CurrentC.Locals)-1]
 	}
 }
 
@@ -252,23 +287,38 @@ func (parser *Parser) string(canAssign bool) {
 }
 
 func (parser *Parser) namedVariable(name token.Token, canAssign bool) {
-	arg := parser.identifierConstant(&name)
+	var getOp, setOp opcode.OpCode
+	var getOpLong, setOpLong opcode.OpCode
+	arg := parser.resolveLocal(&name)
+
+	if arg != -1 {
+		getOp = opcode.OP_GET_LOCAL
+		setOp = opcode.OP_SET_LOCAL
+		getOpLong = opcode.OP_GET_LOCAL_LONG
+		setOpLong = opcode.OP_SET_LOCAL_LONG
+	} else {
+		arg = parser.identifierConstant(&name)
+		getOp = opcode.OP_GET_GLOBAL
+		setOp = opcode.OP_SET_GLOBAL
+		getOpLong = opcode.OP_GET_GLOBAL_LONG
+		setOpLong = opcode.OP_SET_GLOBAL_LONG
+	}
 	
 	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
 		parser.expression()
 		if arg < 256 {
-			parser.emitBytes(byte(opcode.OP_SET_GLOBAL), byte(arg))
+			parser.emitBytes(byte(setOp), byte(arg))
 		} else {
-			parser.emitByte(byte(opcode.OP_SET_GLOBAL_LONG))
+			parser.emitByte(byte(setOpLong))
 			parser.emitByte(byte(arg&0xff))
 			parser.emitByte(byte((arg>>8)&0xff))
 			parser.emitByte(byte((arg>>16)&0xff))
 		}
 	} else {
 		if arg < 256 {
-			parser.emitBytes(byte(opcode.OP_GET_GLOBAL), byte(arg))
+			parser.emitBytes(byte(getOp), byte(arg))
 		} else {
-			parser.emitByte(byte(opcode.OP_GET_GLOBAL_LONG))
+			parser.emitByte(byte(getOpLong))
 			parser.emitByte(byte(arg&0xff))
 			parser.emitByte(byte((arg>>8)&0xff))
 			parser.emitByte(byte((arg>>16)&0xff))
@@ -325,12 +375,66 @@ func (parser *Parser) identifierConstant(name *token.Token) int {
 		&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: name.Lexeme}))
 }
 
+func (parser *Parser) resolveLocal(name *token.Token) int {
+	for i := len(parser.CurrentC.Locals) - 1; i >=0; i-- {
+		local := &parser.CurrentC.Locals[i]
+		if name.Lexeme == local.Name.Lexeme {
+			if local.depth == -1 {
+				parser.error("Cannot read local variable in its own initializer.")
+			}
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (parser *Parser) addLocal(name token.Token) {
+	local := Local{Name: name, depth: -1}
+	parser.CurrentC.Locals = append(parser.CurrentC.Locals, local)
+}
+
+func (parser *Parser) declareVariable() {
+	// Global variables are implicitly declared.
+	if parser.CurrentC.ScopeDepth == 0 {
+		return
+	}
+
+	name := &parser.Previous
+	for i := len(parser.CurrentC.Locals) - 1; i >= 0; i-- {
+		local := &parser.CurrentC.Locals[i]
+		if local.depth != -1 && local.depth < parser.CurrentC.ScopeDepth {
+			break
+		}
+
+		if name.Lexeme == local.Name.Lexeme {
+			parser.error("Variable with this name already declared in this scope.")
+		}
+	}
+	parser.addLocal(*name)
+}
+
 func (parser *Parser) parserVariable(errorMessage string) int {
 	parser.consume(tokentype.TOKEN_IDENTIFIER, errorMessage)
+
+	parser.declareVariable()
+	if parser.CurrentC.ScopeDepth > 0 {
+		return 0
+	}
+
 	return parser.identifierConstant(&parser.Previous)
 }
 
+func (parser *Parser) markInitialized() {
+	parser.CurrentC.Locals[len(parser.CurrentC.Locals) -1].depth = parser.CurrentC.ScopeDepth
+}
+
 func (parser *Parser) defineVariable(global int) {
+	if parser.CurrentC.ScopeDepth > 0 {
+		parser.markInitialized()
+		return
+	}
+
 	if global < 256 {
 		parser.emitBytes(byte(opcode.OP_DEFINE_GLOBAL), byte(global))
 	} else {
@@ -348,6 +452,14 @@ func (parser *Parser) getRule(token tokentype.TokenType) *ParseRule {
 
 func (parser *Parser) expression() {
 	parser.parsePrecedence(precedence.PREC_ASSIGNMENT)
+}
+
+func (parser *Parser) block() {
+	for !parser.check(tokentype.TOKEN_RIGHT_BRACE) && !parser.check(tokentype.TOKEN_EOF) {
+		parser.declaration()
+	}
+
+	parser.consume(tokentype.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
 }
 
 func (parser *Parser) varDeclaration() {
@@ -417,6 +529,10 @@ func (parser *Parser) declaration() {
 func (parser *Parser) statement() {
 	if (parser.match(tokentype.TOKEN_PRINT)) {
 		parser.printStatement()
+	} else if parser.match(tokentype.TOKEN_LEFT_BRACE) {
+		parser.beginScope()
+		parser.block()
+		parser.endScope()
 	} else {
 		parser.expressionStatement()
 	}
