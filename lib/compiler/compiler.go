@@ -7,7 +7,6 @@ import (
 	"golanglox/lib/compiler/precedence"
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
-	"golanglox/lib/object/objecttype"
 	"golanglox/lib/scanner"
 	"golanglox/lib/scanner/token"
 	"golanglox/lib/scanner/token/tokentype"
@@ -282,8 +281,7 @@ func (parser *Parser) number(canAssign bool) {
 
 func (parser *Parser) string(canAssign bool) {
 	parser.emitConstant(
-		value.NewObjString(
-			&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: parser.Previous.Lexeme[1 : len(parser.Previous.Lexeme)-1]}))
+		value.NewObjString(parser.Previous.Lexeme[1 : len(parser.Previous.Lexeme)-1]))
 }
 
 func (parser *Parser) namedVariable(name token.Token, canAssign bool) {
@@ -371,8 +369,7 @@ func (parser *Parser) parsePrecedence(preced precedence.Precedence) {
 }
 
 func (parser *Parser) identifierConstant(name *token.Token) int {
-	return parser.currentChunk().AddConstant(value.NewObjString(
-		&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: name.Lexeme}))
+	return parser.currentChunk().AddConstant(value.NewObjString(name.Lexeme))
 }
 
 func (parser *Parser) resolveLocal(name *token.Token) int {

@@ -8,7 +8,6 @@ import (
 	"golanglox/lib/compiler"
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
-	"golanglox/lib/object/objecttype"
 	"golanglox/lib/utils/unsafecode"
 	"golanglox/lib/value"
 	"golanglox/lib/value/valuetype"
@@ -269,8 +268,7 @@ func (vm *VM) concatenate() {
 	b := vm.pop().AsGoString()
 	a := vm.pop().AsGoString()
 
-	vm.push(value.NewObjString(
-		&value.ObjString{Obj: value.Obj{Type: objecttype.OBJ_STRING}, String: a + b}))
+	vm.push(value.NewObjString(a + b))
 }
 
 func (vm *VM) readByte() byte {

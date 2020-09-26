@@ -2,30 +2,37 @@ package value
 
 import (
 	"fmt"
-	"golanglox/lib/object/objecttype"
+	"golanglox/lib/value/objecttype"
 	"golanglox/lib/value/valuetype"
 	"unsafe"
 )
 
+// Obj struct
 type Obj struct {
 	Type objecttype.ObjType
 }
+
+// ObjString struct
 type ObjString struct {
 	Obj
 	String string
 }
 
+// Value struct
 type Value struct {
 	Type valuetype.ValueType
 	Data interface{}
 }
 
+// New return new non object Value
 func New(valType valuetype.ValueType, val interface{}) Value {
 	return Value{Type: valType, Data: val}
 }
 
-func NewObjString(val *ObjString) Value {
-	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(val))}
+// NewObjString return ObjString Value
+func NewObjString(val string) Value {
+	valObj := &ObjString{Obj: Obj{Type: objecttype.OBJ_STRING}, String: val}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(valObj))}
 }
 
 func (value Value) AsBool() bool {
@@ -76,18 +83,6 @@ func (value Value) isObjType(objType objecttype.ObjType) bool {
 	return value.IsObj() && value.ObjType() == objType
 }
 
-type ValueArray struct {
-	Values []Value
-}
-
-func (valueArray *ValueArray) WriteValueArray(value Value) {
-	valueArray.Values = append(valueArray.Values, value)
-}
-
-func (valueArray *ValueArray) FreeValueArray() {
-	valueArray.Values = make([]Value, 0)
-}
-
 func (value Value) PrintValue() {
 	switch value.Type {
 	case valuetype.VAL_BOOL:
@@ -107,6 +102,18 @@ func (value Value) PrintValue() {
 		value.PrintObject()
 		break
 	}
+}
+
+type ValueArray struct {
+	Values []Value
+}
+
+func (valueArray *ValueArray) WriteValueArray(value Value) {
+	valueArray.Values = append(valueArray.Values, value)
+}
+
+func (valueArray *ValueArray) FreeValueArray() {
+	valueArray.Values = make([]Value, 0)
 }
 
 func (value Value) PrintObject() {
@@ -132,6 +139,7 @@ func ValuesEqual(a Value, b Value) bool {
 	case valuetype.VAL_OBJ:
 		aObj := a.AsObj()
 		bObj := b.AsObj()
+
 		if (aObj.Type == objecttype.OBJ_STRING) {
 			return a.AsGoString() == b.AsGoString()
 		} else {
