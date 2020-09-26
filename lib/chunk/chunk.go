@@ -14,10 +14,7 @@ type Chunk struct {
 
 // New return a pointer to a new Chunk struct
 func New() *Chunk {
-	chunk := new(Chunk)
-	chunk.Code = make([]byte, 0)
-	chunk.Lines = make([]int, 0)
-	return chunk
+	return new(Chunk)
 }
 
 // WriteChunk append a new byte code to chunk
@@ -26,7 +23,7 @@ func (chunk *Chunk) WriteChunk(b byte, line int) {
 	chunk.Lines = append(chunk.Lines, line)
 }
 
-// WriteConstant append a new constant to the chunk
+// WriteConstant write the required bytecode for storing the value in constants
 func (chunk *Chunk) WriteConstant(value value.Value, line int) {
 	index := chunk.AddConstant(value)
 
@@ -48,6 +45,7 @@ func (chunk *Chunk) FreeChunk() {
 	chunk.Constants.FreeValueArray()
 }
 
+// AddConstant appends a new value to the constants slice and returns its index
 func (chunk *Chunk) AddConstant(value value.Value) int {
 	chunk.Constants.WriteValueArray(value)
 	return len(chunk.Constants.Values) - 1
