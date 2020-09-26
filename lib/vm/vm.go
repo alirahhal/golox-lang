@@ -9,7 +9,7 @@ import (
 	"golanglox/lib/config"
 	"golanglox/lib/debug"
 	"golanglox/lib/object/objecttype"
-	"golanglox/lib/unsafecode"
+	"golanglox/lib/utils/unsafecode"
 	"golanglox/lib/value"
 	"golanglox/lib/value/valuetype"
 	"golanglox/lib/vm/interpretresult"
