@@ -3,6 +3,7 @@ package chunk
 import (
 	"golanglox/lib/chunk/opcode"
 	"golanglox/lib/value"
+	"golanglox/lib/value/valuetype"
 	"testing"
 )
 
@@ -23,7 +24,7 @@ func TestWriteConstant(t *testing.T) {
 	t.Run("index<256", func(t *testing.T) {
 		chunkCreated := New()
 
-		chunkCreated.WriteConstant(10, 0)
+		chunkCreated.WriteConstant(value.New(valuetype.VAL_NUMBER, 10), 0)
 		if op := opcode.OpCode(chunkCreated.Code[len(chunkCreated.Code)-2]); op != opcode.OP_CONSTANT {
 			t.Errorf("chunk.WriteConstant(...) failed, expected to get OpCode %v, got %v", opcode.OP_CONSTANT, op)
 		}
@@ -34,7 +35,7 @@ func TestWriteConstant(t *testing.T) {
 		chunkCreated := New()
 
 		for i := 0; i < 257; i++ {
-			chunkCreated.WriteConstant(value.Value(i), 0)
+			chunkCreated.WriteConstant(value.New(valuetype.VAL_NUMBER, i), 0)
 		}
 		if op := opcode.OpCode(chunkCreated.Code[len(chunkCreated.Code)-4]); op != opcode.OP_CONSTANT_LONG {
 			t.Errorf("chunk.WriteConstant(...) failed, expected to get OpCode %v, got %v", opcode.OP_CONSTANT_LONG, op)
