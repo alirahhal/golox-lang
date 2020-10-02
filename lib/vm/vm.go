@@ -29,8 +29,7 @@ type VM struct {
 
 // New return a pointer to a new VM struct
 func New() *VM {
-	vm := new(VM)
-	return vm
+	return new(VM)
 }
 
 // InitVM intitialze VM struct

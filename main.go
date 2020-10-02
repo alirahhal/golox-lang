@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	start := time.Now()
+	
 
 	vm := vm.New()
 	vm.InitVM()
@@ -27,10 +27,6 @@ func main() {
 	}
 
 	vm.FreeVM()
-
-	elapsed := time.Since(start)
-	fmt.Print("\n\n")
-	log.Printf("Running took %s", elapsed)
 }
 
 func repl(vm *vm.VM) {
@@ -56,7 +52,14 @@ func runFile(path string, vm *vm.VM) {
 	}
 
 	source := string(fileContent)
+
+	start := time.Now()
+
 	result := vm.Interpret(source)
+
+	elapsed := time.Since(start)
+	fmt.Print("\n\n")
+	log.Printf("Running took %s", elapsed.String())
 
 	if result == interpretresult.INTERPRET_COMPILE_ERROR {
 		os.Exit(65)

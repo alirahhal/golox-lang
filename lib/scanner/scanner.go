@@ -16,8 +16,7 @@ type Scanner struct {
 
 // New creates a new Scanner struct and returns a pointer to it
 func New() *Scanner {
-	scanner := new(Scanner)
-	return scanner
+	return new(Scanner)
 }
 
 // InitScanner initializa a scanner
