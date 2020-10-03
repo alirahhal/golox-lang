@@ -21,9 +21,9 @@ const (
 
 // VM struct
 type VM struct {
-	Chunk *chunk.Chunk
-	IP    *byte
-	Stack []value.Value
+	Chunk   *chunk.Chunk
+	IP      *byte
+	Stack   []value.Value
 	Globals map[string]value.Value
 }
 
@@ -179,7 +179,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return a.AsNumber() < b.AsNumber()
 			})
 			break
-		
+
 		case opcode.OP_ADD:
 			if vm.peek(0).IsString() && vm.peek(1).IsString() {
 				vm.concatenate()
@@ -228,6 +228,16 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.pop().PrintValue()
 			fmt.Printf("\n")
 			break
+		case opcode.OP_JUMP:
+			offset := vm.readShort()
+			vm.IP = unsafecode.Increment(vm.IP, int(offset))
+			break
+		case opcode.OP_JUMP_IF_FALSE:
+			offset := vm.readShort()
+			if isFalsey(vm.peek(0)) {
+				vm.IP = unsafecode.Increment(vm.IP, int(offset))
+			}
+			break
 		case opcode.OP_RETURN:
 			// Exit interpreter
 			return interpretresult.INTERPRET_OK
@@ -272,9 +282,21 @@ func (vm *VM) concatenate() {
 
 func (vm *VM) readByte() byte {
 	returnVal := *(vm.IP)
-	vm.IP = unsafecode.Increment(vm.IP)
+	vm.IP = unsafecode.Increment(vm.IP, 1)
 
 	return returnVal
+}
+
+func (vm *VM) readShort() uint16 {
+	bytes := make([]byte, 0)
+	for i := 0; i < 4; i++ {
+		if i == 2 || i == 3 {
+			bytes = append(bytes, 0)
+			break
+		}
+		bytes = append(bytes, vm.readByte())
+	}
+	return binary.BigEndian.Uint16(bytes)
 }
 
 func (vm *VM) readLong() uint32 {

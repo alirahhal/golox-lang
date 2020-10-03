@@ -75,6 +75,10 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_NEGATE", offset)
 	case opcode.OP_PRINT:
 		return simpleInstruction("OP_PRINT", offset)
+	case opcode.OP_JUMP:
+		return jumpInstruction("OP_JUMP", 1, chunk, offset)
+	case opcode.OP_JUMP_IF_FALSE:
+		return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset)
 	case opcode.OP_RETURN:
 		return simpleInstruction("OP_RETURN", offset)
 	default:
@@ -89,7 +93,7 @@ func simpleInstruction(name string, offset int) int {
 }
 
 func byteInstruction(name string, chunk *chunk.Chunk, offset int) int {
-	slot := chunk.Code[offset + 1]
+	slot := chunk.Code[offset+1]
 	fmt.Printf("%s %4d\n", name, slot)
 	return offset + 2
 }
@@ -100,6 +104,16 @@ func byteInstructionLong(name string, chunk *chunk.Chunk, offset int) int {
 	var slot uint32 = binary.LittleEndian.Uint32(bytes)
 	fmt.Printf("%s %4d\n", name, slot)
 	return offset + 4
+}
+
+func jumpInstruction(name string, sign int, chunk *chunk.Chunk, offset int) int {
+	// jump := (uint16)(chunk.Code[offset+1] << 8)
+	// jump |= uint16(chunk.Code[offset+2])
+	bytes := make([]byte, 4)
+	copy(bytes, chunk.Code[offset+1:offset+3])
+	jump := binary.BigEndian.Uint16(bytes)
+	fmt.Printf("%s %4d -> %d\n", name, offset, offset+3+sign*int(jump))
+	return offset + 3
 }
 
 func constantInstruction(name string, chunk *chunk.Chunk, offset int) int {

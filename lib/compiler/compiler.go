@@ -22,7 +22,7 @@ type Parser struct {
 	Previous  token.Token
 	HadError  bool
 	PanicMode bool
-	CurrentC *Compiler
+	CurrentC  *Compiler
 
 	scanner *scanner.Scanner
 	chunk   *chunk.Chunk
@@ -30,13 +30,13 @@ type Parser struct {
 
 // Compiler struct
 type Compiler struct {
-	Locals []Local
+	Locals     []Local
 	ScopeDepth int
 }
 
 // Local struct
 type Local struct {
-	Name token.Token
+	Name  token.Token
 	depth int
 }
 
@@ -123,7 +123,7 @@ func Compile(source string, chunk *chunk.Chunk) bool {
 	parser := New(scanner, chunk, compiler)
 
 	parser.advance()
-	
+
 	for !parser.match(tokentype.TOKEN_EOF) {
 		parser.declaration()
 	}
@@ -176,12 +176,30 @@ func (parser *Parser) emitBytes(b1 byte, b2 byte) {
 	parser.emitByte(b2)
 }
 
+func (parser *Parser) emitJump(instruction opcode.OpCode) int {
+	parser.emitByte(byte(instruction))
+	parser.emitByte(0xff)
+	parser.emitByte(0xff)
+	return len(parser.currentChunk().Code) - 2
+}
+
 func (parser *Parser) emitReturn() {
 	parser.emitByte(byte(opcode.OP_RETURN))
 }
 
 func (parser *Parser) emitConstant(value value.Value) {
 	parser.currentChunk().WriteConstant(value, parser.Previous.Line)
+}
+
+func (parser *Parser) patchJump(offset int) {
+	jump := len(parser.currentChunk().Code) - offset - 2
+
+	// if (jump > UINT16_MAX) {
+	// 	error("Too much code to jump over.");
+	//   }
+
+	parser.currentChunk().Code[offset] = byte((jump >> 8) & 0xff)
+	parser.currentChunk().Code[offset+1] = byte(jump & 0xff)
 }
 
 func (parser *Parser) endCompiler() {
@@ -301,25 +319,25 @@ func (parser *Parser) namedVariable(name token.Token, canAssign bool) {
 		getOpLong = opcode.OP_GET_GLOBAL_LONG
 		setOpLong = opcode.OP_SET_GLOBAL_LONG
 	}
-	
+
 	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
 		parser.expression()
 		if arg < 256 {
 			parser.emitBytes(byte(setOp), byte(arg))
 		} else {
 			parser.emitByte(byte(setOpLong))
-			parser.emitByte(byte(arg&0xff))
-			parser.emitByte(byte((arg>>8)&0xff))
-			parser.emitByte(byte((arg>>16)&0xff))
+			parser.emitByte(byte(arg & 0xff))
+			parser.emitByte(byte((arg >> 8) & 0xff))
+			parser.emitByte(byte((arg >> 16) & 0xff))
 		}
 	} else {
 		if arg < 256 {
 			parser.emitBytes(byte(getOp), byte(arg))
 		} else {
 			parser.emitByte(byte(getOpLong))
-			parser.emitByte(byte(arg&0xff))
-			parser.emitByte(byte((arg>>8)&0xff))
-			parser.emitByte(byte((arg>>16)&0xff))
+			parser.emitByte(byte(arg & 0xff))
+			parser.emitByte(byte((arg >> 8) & 0xff))
+			parser.emitByte(byte((arg >> 16) & 0xff))
 		}
 	}
 }
@@ -373,7 +391,7 @@ func (parser *Parser) identifierConstant(name *token.Token) int {
 }
 
 func (parser *Parser) resolveLocal(name *token.Token) int {
-	for i := len(parser.CurrentC.Locals) - 1; i >=0; i-- {
+	for i := len(parser.CurrentC.Locals) - 1; i >= 0; i-- {
 		local := &parser.CurrentC.Locals[i]
 		if name.Lexeme == local.Name.Lexeme {
 			if local.depth == -1 {
@@ -423,7 +441,7 @@ func (parser *Parser) parserVariable(errorMessage string) int {
 }
 
 func (parser *Parser) markInitialized() {
-	parser.CurrentC.Locals[len(parser.CurrentC.Locals) -1].depth = parser.CurrentC.ScopeDepth
+	parser.CurrentC.Locals[len(parser.CurrentC.Locals)-1].depth = parser.CurrentC.ScopeDepth
 }
 
 func (parser *Parser) defineVariable(global int) {
@@ -436,9 +454,9 @@ func (parser *Parser) defineVariable(global int) {
 		parser.emitBytes(byte(opcode.OP_DEFINE_GLOBAL), byte(global))
 	} else {
 		parser.emitByte(byte(opcode.OP_DEFINE_GLOBAL_LONG))
-		parser.emitByte(byte(global&0xff))
-		parser.emitByte(byte((global>>8)&0xff))
-		parser.emitByte(byte((global>>16)&0xff))
+		parser.emitByte(byte(global & 0xff))
+		parser.emitByte(byte((global >> 8) & 0xff))
+		parser.emitByte(byte((global >> 16) & 0xff))
 	}
 }
 
@@ -478,6 +496,26 @@ func (parser *Parser) expressionStatement() {
 	parser.emitByte(byte(opcode.OP_POP))
 }
 
+func (parser *Parser) ifStatement() {
+	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after 'if'.")
+	parser.expression()
+	parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after condition")
+
+	thenJump := parser.emitJump(opcode.OP_JUMP_IF_FALSE)
+	parser.emitByte(byte(opcode.OP_POP))
+	parser.statement()
+
+	elseJump := parser.emitJump(opcode.OP_JUMP)
+
+	parser.patchJump(thenJump)
+	parser.emitByte(byte(opcode.OP_POP))
+
+	if parser.match(tokentype.TOKEN_ELSE) {
+		parser.statement()
+	}
+	parser.patchJump(elseJump)
+}
+
 func (parser *Parser) printStatement() {
 	parser.expression()
 	parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after value.")
@@ -487,7 +525,7 @@ func (parser *Parser) printStatement() {
 func (parser *Parser) synchronize() {
 	parser.PanicMode = false
 	for parser.Current.Type != tokentype.TOKEN_EOF {
-		if(parser.Previous.Type == tokentype.TOKEN_SEMICOLON) {
+		if parser.Previous.Type == tokentype.TOKEN_SEMICOLON {
 			return
 		}
 
@@ -500,11 +538,11 @@ func (parser *Parser) synchronize() {
 		case tokentype.TOKEN_WHILE:
 		case tokentype.TOKEN_PRINT:
 		case tokentype.TOKEN_RETURN:
-		  return;
-  
+			return
+
 		default:
-		  // Do nothing.
-		  ;
+			// Do nothing.
+
 		}
 
 		parser.advance()
@@ -524,8 +562,10 @@ func (parser *Parser) declaration() {
 }
 
 func (parser *Parser) statement() {
-	if (parser.match(tokentype.TOKEN_PRINT)) {
+	if parser.match(tokentype.TOKEN_PRINT) {
 		parser.printStatement()
+	} else if parser.match(tokentype.TOKEN_IF) {
+		parser.ifStatement()
 	} else if parser.match(tokentype.TOKEN_LEFT_BRACE) {
 		parser.beginScope()
 		parser.block()
