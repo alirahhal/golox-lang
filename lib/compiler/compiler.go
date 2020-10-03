@@ -94,7 +94,7 @@ func init() {
 	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{(*Parser).variable, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_STRING] = ParseRule{(*Parser).string, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_NUMBER] = ParseRule{(*Parser).number, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_AND] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_AND] = ParseRule{nil, (*Parser).and_, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_CLASS] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_ELSE] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_FALSE] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
@@ -297,6 +297,17 @@ func (parser *Parser) number(canAssign bool) {
 	parser.emitConstant(value.New(valuetype.VAL_NUMBER, val))
 }
 
+func (parser *Parser) or_(canAssign bool) {
+	elseJump := parser.emitJump(opcode.OP_JUMP_IF_FALSE)
+	endJump := parser.emitJump(opcode.OP_JUMP)
+
+	parser.patchJump(elseJump)
+	parser.emitByte(byte(opcode.OP_POP))
+
+	parser.parsePrecedence(precedence.PREC_OR)
+	parser.patchJump(endJump)
+}
+
 func (parser *Parser) string(canAssign bool) {
 	parser.emitConstant(
 		value.NewObjString(parser.Previous.Lexeme[1 : len(parser.Previous.Lexeme)-1]))
@@ -458,6 +469,15 @@ func (parser *Parser) defineVariable(global int) {
 		parser.emitByte(byte((global >> 8) & 0xff))
 		parser.emitByte(byte((global >> 16) & 0xff))
 	}
+}
+
+func (parser *Parser) and_(canAssign bool) {
+	endJump := parser.emitJump(opcode.OP_JUMP_IF_FALSE)
+
+	parser.emitByte(byte(opcode.OP_POP))
+	parser.parsePrecedence(precedence.PREC_AND)
+
+	parser.patchJump(endJump)
 }
 
 func (parser *Parser) getRule(token tokentype.TokenType) *ParseRule {
