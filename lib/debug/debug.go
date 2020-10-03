@@ -79,6 +79,8 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return jumpInstruction("OP_JUMP", 1, chunk, offset)
 	case opcode.OP_JUMP_IF_FALSE:
 		return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset)
+	case opcode.OP_LOOP:
+		return jumpInstruction("OP_LOOP", -1, chunk, offset)
 	case opcode.OP_RETURN:
 		return simpleInstruction("OP_RETURN", offset)
 	default:
@@ -107,8 +109,6 @@ func byteInstructionLong(name string, chunk *chunk.Chunk, offset int) int {
 }
 
 func jumpInstruction(name string, sign int, chunk *chunk.Chunk, offset int) int {
-	// jump := (uint16)(chunk.Code[offset+1] << 8)
-	// jump |= uint16(chunk.Code[offset+2])
 	bytes := make([]byte, 4)
 	copy(bytes, chunk.Code[offset+1:offset+3])
 	jump := binary.BigEndian.Uint16(bytes)

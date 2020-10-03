@@ -4,12 +4,23 @@ import (
 	"unsafe"
 )
 
-func Increment(pointer *byte, step int) *byte {
+func Increment(pointer *byte, steps int) *byte {
 	// Convert a pointer to an byte to an unsafe.Pointer, then to a uintptr.
 	addressHolder := uintptr(unsafe.Pointer(pointer))
 
 	// Increment the value of the address by the number of bytes of an element
-	addressHolder = addressHolder + unsafe.Sizeof(*(pointer))*uintptr(step)
+	addressHolder = addressHolder + unsafe.Sizeof(*(pointer))*uintptr(steps)
+
+	// Convert a uintptr to an unsafe.Pointer, then to a pointer to an byte.
+	return (*byte)(unsafe.Pointer(addressHolder))
+}
+
+func Decrement(pointer *byte, steps int) *byte {
+	// Convert a pointer to an byte to an unsafe.Pointer, then to a uintptr.
+	addressHolder := uintptr(unsafe.Pointer(pointer))
+
+	// Increment the value of the address by the number of bytes of an element
+	addressHolder = addressHolder - unsafe.Sizeof(*(pointer))*uintptr(steps)
 
 	// Convert a uintptr to an unsafe.Pointer, then to a pointer to an byte.
 	return (*byte)(unsafe.Pointer(addressHolder))

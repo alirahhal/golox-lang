@@ -238,6 +238,10 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				vm.IP = unsafecode.Increment(vm.IP, int(offset))
 			}
 			break
+		case opcode.OP_LOOP:
+			offset := vm.readShort()
+			vm.IP = unsafecode.Decrement(vm.IP, int(offset))
+			break
 		case opcode.OP_RETURN:
 			// Exit interpreter
 			return interpretresult.INTERPRET_OK

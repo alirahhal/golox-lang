@@ -176,6 +176,16 @@ func (parser *Parser) emitBytes(b1 byte, b2 byte) {
 	parser.emitByte(b2)
 }
 
+func (parser *Parser) emitLoop(loopStart int) {
+	parser.emitByte(byte(opcode.OP_LOOP))
+
+	offset := len(parser.currentChunk().Code) - loopStart + 2
+	// if (offset > UINT16_MAX) error("Loop body too large.");
+
+	parser.emitByte(byte((offset >> 8) & 0xff))
+	parser.emitByte(byte(offset & 0xff))
+}
+
 func (parser *Parser) emitJump(instruction opcode.OpCode) int {
 	parser.emitByte(byte(instruction))
 	parser.emitByte(0xff)
@@ -542,6 +552,24 @@ func (parser *Parser) printStatement() {
 	parser.emitByte(byte(opcode.OP_PRINT))
 }
 
+func (parser *Parser) whileStatement() {
+	loopStart := len(parser.currentChunk().Code)
+
+	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after 'while'.")
+	parser.expression()
+	parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after condition.")
+
+	exitJump := parser.emitJump(opcode.OP_JUMP_IF_FALSE)
+
+	parser.emitByte(byte(opcode.OP_POP))
+	parser.statement()
+
+	parser.emitLoop(loopStart)
+
+	parser.patchJump(exitJump)
+	parser.emitByte(byte(opcode.OP_POP))
+}
+
 func (parser *Parser) synchronize() {
 	parser.PanicMode = false
 	for parser.Current.Type != tokentype.TOKEN_EOF {
@@ -586,6 +614,8 @@ func (parser *Parser) statement() {
 		parser.printStatement()
 	} else if parser.match(tokentype.TOKEN_IF) {
 		parser.ifStatement()
+	} else if parser.match(tokentype.TOKEN_WHILE) {
+		parser.whileStatement()
 	} else if parser.match(tokentype.TOKEN_LEFT_BRACE) {
 		parser.beginScope()
 		parser.block()
