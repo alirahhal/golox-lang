@@ -526,6 +526,56 @@ func (parser *Parser) expressionStatement() {
 	parser.emitByte(byte(opcode.OP_POP))
 }
 
+func (parser *Parser) forStatement() {
+	// Variables declared in the initializer should be scoped to the loop body
+	parser.beginScope()
+
+	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after 'for'.")
+	if parser.match(tokentype.TOKEN_SEMICOLON) {
+		// No initializer
+	} else if parser.match(tokentype.TOKEN_VAR) {
+		parser.varDeclaration()
+	} else {
+		parser.expressionStatement()
+	}
+
+	loopStart := len(parser.currentChunk().Code)
+
+	exitJump := -1
+	if !parser.match(tokentype.TOKEN_SEMICOLON) {
+		parser.expression()
+		parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after loop condition.")
+
+		// Jump out of the loop if the condition is false.
+		exitJump = parser.emitJump(opcode.OP_JUMP_IF_FALSE)
+		parser.emitByte(byte(opcode.OP_POP))
+	}
+
+	if !parser.match(tokentype.TOKEN_RIGHT_PAREN) {
+		bodyJump := parser.emitJump(opcode.OP_JUMP)
+
+		incrementStart := len(parser.currentChunk().Code)
+		parser.expression()
+		parser.emitByte(byte(opcode.OP_POP))
+		parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.")
+
+		parser.emitLoop(loopStart)
+		loopStart = incrementStart
+		parser.patchJump(bodyJump)
+	}
+
+	parser.statement()
+
+	parser.emitLoop(loopStart)
+
+	if exitJump != -1 {
+		parser.patchJump(exitJump)
+		parser.emitByte(byte(opcode.OP_POP))
+	}
+
+	parser.endScope()
+}
+
 func (parser *Parser) ifStatement() {
 	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after 'if'.")
 	parser.expression()
@@ -612,6 +662,8 @@ func (parser *Parser) declaration() {
 func (parser *Parser) statement() {
 	if parser.match(tokentype.TOKEN_PRINT) {
 		parser.printStatement()
+	} else if parser.match(tokentype.TOKEN_FOR) {
+		parser.forStatement()
 	} else if parser.match(tokentype.TOKEN_IF) {
 		parser.ifStatement()
 	} else if parser.match(tokentype.TOKEN_WHILE) {
