@@ -7,7 +7,7 @@ build:
 	@go build -o $(BINARY_DIR)/golanglox.exe $(SRC_NAME)
 
 run:
-	@go run ${SRC_NAME} ${testfile}
+	@go run ${SRC_NAME} samples/${testfile}
 
 install: go-get
 
