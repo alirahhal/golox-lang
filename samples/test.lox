@@ -1,5 +1,5 @@
 
 
-for (var a = 0; a < 10000000; a = a + 1) {}
+for (var a = 0; a < 10000; a = a + 1) {}
 
 print("finished");
