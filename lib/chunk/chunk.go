@@ -17,6 +17,18 @@ func New() *Chunk {
 	return new(Chunk)
 }
 
+func (chunk *Chunk) GetCode() []byte {
+	return chunk.Code
+}
+
+func (chunk *Chunk) GetLines() []int {
+	return chunk.Lines
+}
+
+func (chunk *Chunk) GetConstants() value.ValueArray {
+	return chunk.Constants
+}
+
 // WriteChunk append a new byte code to chunk
 func (chunk *Chunk) WriteChunk(b byte, line int) {
 	chunk.Code = append(chunk.Code, b)

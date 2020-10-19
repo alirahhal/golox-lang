@@ -12,6 +12,28 @@ type Obj struct {
 	Type objecttype.ObjType
 }
 
+// FuncChunk is introduced here to solve the circular dependecy problem
+type FuncChunk interface {
+	GetCode() []byte
+	GetLines() []int
+	GetConstants() ValueArray
+}
+
+// ObjFunction struct
+type ObjFunction struct {
+	Obj
+	Arity int
+	Chunk FuncChunk
+	Name *ObjString
+}
+
+type NativeFn func(argCount int, args []Value) Value
+
+type ObjNative struct {
+	Obj
+	Function NativeFn
+}
+
 // ObjString struct
 type ObjString struct {
 	Obj
@@ -27,6 +49,24 @@ type Value struct {
 // New return new non object Value
 func New(valType valuetype.ValueType, val interface{}) Value {
 	return Value{Type: valType, Data: val}
+}
+
+func NewFunction(c FuncChunk) *ObjFunction {
+	valObj := &ObjFunction{Obj: Obj{Type: objecttype.OBJ_FUNCTION}, Arity: 0, Name: nil, Chunk: c}
+	return valObj
+}
+
+func NewObjFunction(val *ObjFunction) Value {
+	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(val))}
+}
+
+func NewNative(function NativeFn) *ObjNative {
+	native := &ObjNative{Obj: Obj{Type: objecttype.OBJ_NATIVE}, Function: function}
+	return native
+}
+
+func NewObjNative(val *ObjNative) Value {
+	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(val))}
 }
 
 // NewObjString return ObjString Value
@@ -45,6 +85,22 @@ func (value Value) AsNumber() float64 {
 
 func (value Value) AsObj() *Obj {
 	return value.Data.(*Obj)
+}
+
+func (value Value) AsFunction() *ObjFunction {
+	return (*ObjFunction)(unsafe.Pointer(value.AsObj()))
+}
+
+func (value Value) AsNative() *ObjNative {
+	return (*ObjNative)(unsafe.Pointer(value.AsObj()))
+}
+
+func (value Value) AsString() *ObjString {
+	return (*ObjString)(unsafe.Pointer(value.AsObj()))
+}
+
+func (value Value) AsGoString() string {
+	return value.AsString().String
 }
 
 func (value Value) IsBool() bool {
@@ -67,16 +123,16 @@ func (value Value) ObjType() objecttype.ObjType {
 	return value.AsObj().Type
 }
 
+func (value Value) IsFunction() bool {
+	return value.isObjType(objecttype.OBJ_FUNCTION)
+}
+
+func (value Value) IsNative() bool {
+	return value.isObjType(objecttype.OBJ_NATIVE)
+}
+
 func (value Value) IsString() bool {
 	return value.isObjType(objecttype.OBJ_STRING)
-}
-
-func (value Value) AsString() *ObjString {
-	return (*ObjString)(unsafe.Pointer(value.AsObj()))
-}
-
-func (value Value) AsGoString() string {
-	return value.AsString().String
 }
 
 func (value Value) isObjType(objType objecttype.ObjType) bool {
@@ -116,11 +172,26 @@ func (valueArray *ValueArray) FreeValueArray() {
 	valueArray.Values = make([]Value, 0)
 }
 
+func printFunction(function *ObjFunction) {
+	if function.Name == nil {
+		fmt.Printf("<script>")
+		return
+	}
+	fmt.Printf("<fn %s>", function.Name.String)
+}
+
 func (value Value) PrintObject() {
 	switch value.ObjType() {
+	case objecttype.OBJ_FUNCTION:
+		printFunction(value.AsFunction())
+		break
+	case objecttype.OBJ_NATIVE:
+		fmt.Printf("<native fn>")
+		break
 	case objecttype.OBJ_STRING:
 		fmt.Printf("%s", value.AsGoString())
 		break
+	
 	}
 }
 

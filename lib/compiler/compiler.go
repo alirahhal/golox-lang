@@ -25,11 +25,14 @@ type Parser struct {
 	CurrentC  *Compiler
 
 	scanner *scanner.Scanner
-	chunk   *chunk.Chunk
 }
 
 // Compiler struct
 type Compiler struct {
+	enclosing *Compiler
+	function *value.ObjFunction
+	funcType FunctionType
+
 	Locals     []Local
 	ScopeDepth int
 }
@@ -39,6 +42,13 @@ type Local struct {
 	Name  token.Token
 	depth int
 }
+
+type FunctionType byte
+
+const (
+	TYPE_FUNCTION FunctionType = iota
+	TYPE_SCRIPT
+)
 
 // ParseFn func
 type ParseFn func(receiver *Parser, canAssign bool)
@@ -53,26 +63,39 @@ type ParseRule struct {
 var rules map[tokentype.TokenType]ParseRule
 
 // New creates a new parser and returns it
-func New(scanner *scanner.Scanner, chunk *chunk.Chunk, compiler *Compiler) *Parser {
+func New(scanner *scanner.Scanner) *Parser {
 	parser := new(Parser)
 	parser.HadError = false
 	parser.PanicMode = false
 	parser.scanner = scanner
-	parser.chunk = chunk
-	parser.CurrentC = compiler
+
 	return parser
 }
 
-func newCompiler() *Compiler {
+func (parser *Parser) initCompiler(funcType FunctionType) *Compiler {
 	compiler := new(Compiler)
+	compiler.enclosing = parser.CurrentC
+	compiler.function = value.NewFunction(chunk.New())
+	compiler.funcType = funcType
 	compiler.ScopeDepth = 0
 	compiler.Locals = make([]Local, 0)
+
+	parser.CurrentC = compiler
+
+	if funcType != TYPE_SCRIPT {
+		compiler.function.Name = value.NewObjString(parser.Previous.Lexeme).AsString() // Todo: !!!
+	}
+
+	// **** not sure ****
+	local := Local{depth: 0, Name: token.Token{Lexeme: ""}}
+	compiler.Locals = append(compiler.Locals, local)
+
 	return compiler
 }
 
 func init() {
 	rules = make(map[tokentype.TokenType]ParseRule)
-	rules[tokentype.TOKEN_LEFT_PAREN] = ParseRule{(*Parser).grouping, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LEFT_PAREN] = ParseRule{(*Parser).grouping, (*Parser).call, precedence.PREC_CALL}
 	rules[tokentype.TOKEN_RIGHT_PAREN] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_LEFT_BRACE] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_RIGHT_BRACE] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -115,12 +138,12 @@ func init() {
 }
 
 // Compile the input source string and emits byteCode
-func Compile(source string, chunk *chunk.Chunk) bool {
+func Compile(source string) *value.ObjFunction {
 	scanner := scanner.New()
 	scanner.InitScanner(source)
-	compiler := newCompiler()
 
-	parser := New(scanner, chunk, compiler)
+	parser := New(scanner)
+	parser.initCompiler(TYPE_SCRIPT)
 
 	parser.advance()
 
@@ -128,9 +151,12 @@ func Compile(source string, chunk *chunk.Chunk) bool {
 		parser.declaration()
 	}
 
-	parser.endCompiler()
+	function := parser.endCompiler()
 
-	return !parser.HadError
+	if parser.HadError {
+		return nil
+	}
+	return function
 }
 
 func (parser *Parser) advance() {
@@ -194,6 +220,7 @@ func (parser *Parser) emitJump(instruction opcode.OpCode) int {
 }
 
 func (parser *Parser) emitReturn() {
+	parser.emitByte(byte(opcode.OP_NIL))
 	parser.emitByte(byte(opcode.OP_RETURN))
 }
 
@@ -212,14 +239,24 @@ func (parser *Parser) patchJump(offset int) {
 	parser.currentChunk().Code[offset+1] = byte(jump & 0xff)
 }
 
-func (parser *Parser) endCompiler() {
+func (parser *Parser) endCompiler() *value.ObjFunction {
 	parser.emitReturn()
+	function := parser.CurrentC.function
 
 	if config.DEBUG_PRINT_CODE {
 		if !parser.HadError {
-			debug.DisassembleChunk(parser.currentChunk(), "code")
+			var name string
+			if function.Name != nil {
+				name = function.Name.String
+			} else {
+				name = "<script>"
+			}
+			debug.DisassembleChunk(parser.currentChunk(), name)
 		}
 	}
+
+	parser.CurrentC = parser.CurrentC.enclosing
+	return function
 }
 
 func (parser *Parser) beginScope() {
@@ -277,6 +314,11 @@ func (parser *Parser) binary(canAssign bool) {
 	default:
 		return
 	}
+}
+
+func (parser *Parser) call(canAssign bool) {
+	argCount := parser.argumentList()
+	parser.emitBytes(byte(opcode.OP_CALL), argCount)
 }
 
 func (parser *Parser) literal(canAssign bool) {
@@ -462,6 +504,9 @@ func (parser *Parser) parserVariable(errorMessage string) int {
 }
 
 func (parser *Parser) markInitialized() {
+	if parser.CurrentC.ScopeDepth == 0 {
+		return
+	}
 	parser.CurrentC.Locals[len(parser.CurrentC.Locals)-1].depth = parser.CurrentC.ScopeDepth
 }
 
@@ -479,6 +524,26 @@ func (parser *Parser) defineVariable(global int) {
 		parser.emitByte(byte((global >> 8) & 0xff))
 		parser.emitByte(byte((global >> 16) & 0xff))
 	}
+}
+
+func (parser *Parser) argumentList() byte {
+	var argCount byte = 0
+	if !parser.check(tokentype.TOKEN_RIGHT_PAREN) {
+		for {
+			parser.expression()
+			
+			if argCount == 255 {
+				parser.error("Cant have more than 255 arguments.")
+			}
+			argCount++
+			if !parser.match(tokentype.TOKEN_COMMA) {
+				break
+			}
+		}
+	}
+
+	parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after arguments.")
+	return argCount
 }
 
 func (parser *Parser) and_(canAssign bool) {
@@ -505,6 +570,45 @@ func (parser *Parser) block() {
 	}
 
 	parser.consume(tokentype.TOKEN_RIGHT_BRACE, "Expect '}' after block.")
+}
+
+func (parser *Parser) function(funcType FunctionType) {
+	parser.initCompiler(funcType)
+	parser.beginScope()
+
+	// Compiler the parameter list.
+	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after function name.")
+	if !parser.check(tokentype.TOKEN_RIGHT_PAREN) {
+		for {
+			parser.CurrentC.function.Arity++
+			if parser.CurrentC.function.Arity > 255 {
+				parser.errorAtCurrent("Cant have more than 255 parameters.")
+			}
+
+			paramConstant := parser.parserVariable("Expect parameter name.")
+			parser.defineVariable(paramConstant)
+
+			if !parser.match(tokentype.TOKEN_COMMA) {
+				break
+			}
+		}
+	}
+	parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after parameters.")
+
+	// The body
+	parser.consume(tokentype.TOKEN_LEFT_BRACE, "Expect '{' before function body.")
+	parser.block()
+
+	// Create the function object.
+	function := parser.endCompiler()
+	parser.emitConstant(value.NewObjFunction(function))
+}
+
+func (parser *Parser) funDeclaration() {
+	global := parser.parserVariable("Expect function name.")
+	parser.markInitialized()
+	parser.function(TYPE_FUNCTION)
+	parser.defineVariable(global)
 }
 
 func (parser *Parser) varDeclaration() {
@@ -602,6 +706,20 @@ func (parser *Parser) printStatement() {
 	parser.emitByte(byte(opcode.OP_PRINT))
 }
 
+func (parser *Parser) returnStatement() {
+	if parser.CurrentC.funcType == TYPE_SCRIPT {
+		parser.error("Cant return from top-level code.")
+	}
+
+	if parser.match(tokentype.TOKEN_SEMICOLON) {
+		parser.emitReturn()
+	} else {
+		parser.expression()
+		parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after return value.")
+		parser.emitByte(byte(opcode.OP_RETURN))
+	}
+}
+
 func (parser *Parser) whileStatement() {
 	loopStart := len(parser.currentChunk().Code)
 
@@ -648,7 +766,9 @@ func (parser *Parser) synchronize() {
 }
 
 func (parser *Parser) declaration() {
-	if parser.match(tokentype.TOKEN_VAR) {
+	if parser.match(tokentype.TOKEN_FUN) {
+		parser.funDeclaration()
+	} else if parser.match(tokentype.TOKEN_VAR) {
 		parser.varDeclaration()
 	} else {
 		parser.statement()
@@ -666,6 +786,8 @@ func (parser *Parser) statement() {
 		parser.forStatement()
 	} else if parser.match(tokentype.TOKEN_IF) {
 		parser.ifStatement()
+	} else if parser.match(tokentype.TOKEN_RETURN) {
+		parser.returnStatement()
 	} else if parser.match(tokentype.TOKEN_WHILE) {
 		parser.whileStatement()
 	} else if parser.match(tokentype.TOKEN_LEFT_BRACE) {
@@ -678,7 +800,7 @@ func (parser *Parser) statement() {
 }
 
 func (parser *Parser) currentChunk() *chunk.Chunk {
-	return parser.chunk
+	return parser.CurrentC.function.Chunk.(*chunk.Chunk)
 }
 
 func (parser *Parser) errorAt(token *token.Token, message string) {

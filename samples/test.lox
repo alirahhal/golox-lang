@@ -1,5 +1,41 @@
+// fun fib(n) {
+//   if (n < 2) return n;
+//   return fib(n - 2) + fib(n - 1);
+// }
+
+// var start = clock();
+// print fib(2);
+// print clock() - start;
 
 
-for (var a = 0; a < 10000; a = a + 1) {}
 
-print("finished");
+var start = clock();
+
+for (var a = 0; a < 2000000; a = a + 1) {}
+var a = "Done";
+if (1 == 1) {
+    var x = 3;
+    print("in if");
+    print(x);
+}
+print(a);
+
+print clock() - start;
+
+
+
+
+// fun areWeHavingItYet() {
+//   return "Yes we are!";
+// }
+
+// print(areWeHavingItYet());
+
+
+// fun a() { b(); }
+// fun b() { c(); }
+// fun c() {
+//   c("too", "many");
+// }
+
+// a();
