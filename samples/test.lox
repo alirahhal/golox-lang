@@ -1,3 +1,9 @@
+print 1 + 2;
+
+
+
+
+
 // fun fib(n) {
 //   if (n < 2) return n;
 //   return fib(n - 2) + fib(n - 1);
@@ -9,18 +15,18 @@
 
 
 
-var start = clock();
+// var start = clock();
 
-for (var a = 0; a < 2000000; a = a + 1) {}
-var a = "Done";
-if (1 == 1) {
-    var x = 3;
-    print("in if");
-    print(x);
-}
-print(a);
+// for (var a = 0; a < 2000000; a = a + 1) {}
+// var a = "Done";
+// if (1 == 1) {
+//     var x = 3;
+//     print("in if");
+//     print(x);
+// }
+// print(a);
 
-print clock() - start;
+// print clock() - start;
 
 
 
@@ -30,6 +36,8 @@ print clock() - start;
 // }
 
 // print(areWeHavingItYet());
+
+
 
 
 // fun a() { b(); }

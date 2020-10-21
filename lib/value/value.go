@@ -139,6 +139,19 @@ func (value Value) isObjType(objType objecttype.ObjType) bool {
 	return value.IsObj() && value.ObjType() == objType
 }
 
+// ValueArray struct
+type ValueArray struct {
+	Values []Value
+}
+
+func (valueArray *ValueArray) WriteValueArray(value Value) {
+	valueArray.Values = append(valueArray.Values, value)
+}
+
+func (valueArray *ValueArray) FreeValueArray() {
+	valueArray.Values = make([]Value, 0)
+}
+
 func (value Value) PrintValue() {
 	switch value.Type {
 	case valuetype.VAL_BOOL:
@@ -158,18 +171,6 @@ func (value Value) PrintValue() {
 		value.PrintObject()
 		break
 	}
-}
-
-type ValueArray struct {
-	Values []Value
-}
-
-func (valueArray *ValueArray) WriteValueArray(value Value) {
-	valueArray.Values = append(valueArray.Values, value)
-}
-
-func (valueArray *ValueArray) FreeValueArray() {
-	valueArray.Values = make([]Value, 0)
 }
 
 func printFunction(function *ObjFunction) {
