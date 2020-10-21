@@ -25,7 +25,7 @@ const (
 type CallFrame struct {
 	Function *value.ObjFunction
 	IP *byte
-	Slots *value.Value
+	Slots int
 }
 
 // VM struct
@@ -106,23 +106,19 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			break
 		case opcode.OP_GET_LOCAL:
 			slot := vm.readByte()
-			vm.push(*(unsafecode.IndexSlot(frame.Slots, int(slot))))
-			// vm.push(frame.Slots[slot])
+			vm.push(vm.Stack[frame.Slots+int(slot)])
 			break
 		case opcode.OP_GET_LOCAL_LONG:
 			slot := vm.readLong()
-			vm.push(*(unsafecode.IndexSlot(frame.Slots, int(slot))))
-			// vm.push(frame.Slots[slot])
+			vm.push(vm.Stack[frame.Slots+int(slot)])
 			break
 		case opcode.OP_SET_LOCAL:
 			slot := vm.readByte()
-			*(unsafecode.IndexSlot(frame.Slots, int(slot))) = vm.peek(0)
-			// frame.Slots[slot] = vm.peek(0)
+			vm.Stack[frame.Slots+int(slot)] = vm.peek(0)
 			break
 		case opcode.OP_SET_LOCAL_LONG:
 			slot := vm.readLong()
-			*(unsafecode.IndexSlot(frame.Slots, int(slot))) = vm.peek(0)
-			// frame.Slots[slot] = vm.peek(0)
+			vm.Stack[frame.Slots+int(slot)] = vm.peek(0)
 			break
 		case opcode.OP_GET_GLOBAL:
 			name := vm.readConstant().AsGoString()
@@ -274,14 +270,12 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_OK
 			}
 
-			// ******
 			for {
-				if frame.Slots == &vm.Stack[len(vm.Stack)-1] {
+				if len(vm.Stack) == frame.Slots {
 					break
 				}
 				vm.pop()
 			}
-			// ******
 			vm.push(result)
 
 			frame = &vm.Frames[len(vm.Frames)-1]
@@ -325,7 +319,7 @@ func (vm *VM) call(function *value.ObjFunction, argCount int) bool {
 		return false
 	}
 
-	frame := CallFrame{Function: function, IP: &((function.Chunk.GetCode())[0]), Slots: &(vm.Stack[len(vm.Stack)-argCount-1])}
+	frame := CallFrame{Function: function, IP: &((function.Chunk.GetCode())[0]), Slots: len(vm.Stack)-argCount-1}
 	vm.Frames = append(vm.Frames, frame)
 
 	return true
