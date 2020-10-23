@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	FRAMES_INITIAL_SIZE int = 64
+	FRAMES_INITIAL_SIZE int = 256
 	STACK_INITIAL_SIZE int = 256
 )
 
