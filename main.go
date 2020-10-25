@@ -64,7 +64,7 @@ func runFile(path string, vm *vm.VM) {
 	if result == interpretresult.INTERPRET_COMPILE_ERROR {
 		os.Exit(65)
 	}
-	if result == interpretresult.INTERPRET_COMPILE_ERROR {
+	if result == interpretresult.INTERPRET_RUNTIME_ERROR {
 		os.Exit(70)
 	}
 }

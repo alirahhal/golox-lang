@@ -229,6 +229,7 @@ func (parser *Parser) emitConstant(value value.Value) {
 }
 
 func (parser *Parser) patchJump(offset int) {
+	// -2 to adjust for the bytecode for the jump offset itself.
 	jump := len(parser.currentChunk().Code) - offset - 2
 
 	// if (jump > UINT16_MAX) {

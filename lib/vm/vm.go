@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	FRAMES_INITIAL_SIZE int = 256
-	STACK_INITIAL_SIZE int = 256
+	FRAMES_INITIAL_SIZE int = 64
+	STACK_INITIAL_SIZE int = FRAMES_INITIAL_SIZE * 256
 )
 
 type CallFrame struct {
