@@ -12,19 +12,22 @@ type Chunk struct {
 	Constants value.ValueArray
 }
 
-// New return a pointer to a new Chunk struct
+// New creates a new Chunk struct and return a pointer to it
 func New() *Chunk {
 	return new(Chunk)
 }
 
+// GetCode returns the chunk`s code
 func (chunk *Chunk) GetCode() []byte {
 	return chunk.Code
 }
 
+// GetLines returns the chunk`s lines slice
 func (chunk *Chunk) GetLines() []int {
 	return chunk.Lines
 }
 
+// GetConstants returns the chunk`s constants
 func (chunk *Chunk) GetConstants() value.ValueArray {
 	return chunk.Constants
 }
