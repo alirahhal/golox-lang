@@ -26,4 +26,3 @@ make run testfile=samples/test.lox
 - [x] Functions
 - [ ] Closures
 - [ ] Classes
-- [ ] Optimization
