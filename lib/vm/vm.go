@@ -10,8 +10,8 @@ import (
 	"golanglox/lib/debug"
 	"golanglox/lib/utils/unsafecode"
 	"golanglox/lib/value"
-	"golanglox/lib/value/valuetype"
 	"golanglox/lib/value/objecttype"
+	"golanglox/lib/value/valuetype"
 	"golanglox/lib/vm/interpretresult"
 	"os"
 	"time"
@@ -19,13 +19,13 @@ import (
 
 const (
 	FRAMES_INITIAL_SIZE int = 64
-	STACK_INITIAL_SIZE int = FRAMES_INITIAL_SIZE * 256
+	STACK_INITIAL_SIZE  int = FRAMES_INITIAL_SIZE * 256
 )
 
 type CallFrame struct {
 	Function *value.ObjFunction
-	IP *byte
-	Slots int
+	IP       *byte
+	Slots    int
 }
 
 // VM struct
@@ -37,7 +37,7 @@ type VM struct {
 }
 
 func clockNative(argCount int, args []value.Value) value.Value {
-	return value.New(valuetype.VAL_NUMBER, float64(time.Now().UnixNano() / (int64(time.Millisecond)/int64(time.Nanosecond))))
+	return value.New(valuetype.VAL_NUMBER, float64(time.Now().UnixNano()/(int64(time.Millisecond)/int64(time.Nanosecond))))
 }
 
 // New return a pointer to a new VM struct
@@ -87,39 +87,39 @@ func (vm *VM) run() interpretresult.InterpretResult {
 		case opcode.OP_CONSTANT:
 			var constant value.Value = vm.readConstant()
 			vm.push(constant)
-			break
+
 		case opcode.OP_CONSTANT_LONG:
 			var constant value.Value = vm.readConstantLong()
 			vm.push(constant)
-			break
+
 		case opcode.OP_NIL:
 			vm.push(value.New(valuetype.VAL_NIL, nil))
-			break
+
 		case opcode.OP_TRUE:
 			vm.push(value.New(valuetype.VAL_BOOL, true))
-			break
+
 		case opcode.OP_FALSE:
 			vm.push(value.New(valuetype.VAL_BOOL, false))
-			break
+
 		case opcode.OP_POP:
 			vm.pop()
-			break
+
 		case opcode.OP_GET_LOCAL:
 			slot := vm.readByte()
 			vm.push(vm.Stack[frame.Slots+int(slot)])
-			break
+
 		case opcode.OP_GET_LOCAL_LONG:
 			slot := vm.readLong()
 			vm.push(vm.Stack[frame.Slots+int(slot)])
-			break
+
 		case opcode.OP_SET_LOCAL:
 			slot := vm.readByte()
 			vm.Stack[frame.Slots+int(slot)] = vm.peek(0)
-			break
+
 		case opcode.OP_SET_LOCAL_LONG:
 			slot := vm.readLong()
 			vm.Stack[frame.Slots+int(slot)] = vm.peek(0)
-			break
+
 		case opcode.OP_GET_GLOBAL:
 			name := vm.readConstant().AsGoString()
 			val, present := vm.Globals[name]
@@ -128,7 +128,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 			vm.push(val)
-			break
+
 		case opcode.OP_GET_GLOBAL_LONG:
 			name := vm.readConstantLong().AsGoString()
 			val, present := vm.Globals[name]
@@ -137,17 +137,17 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 			vm.push(val)
-			break
+
 		case opcode.OP_DEFINE_GLOBAL:
 			name := vm.readConstant().AsGoString()
 			vm.Globals[name] = vm.peek(0)
 			vm.pop()
-			break
+
 		case opcode.OP_DEFINE_GLOBAL_LONG:
 			name := vm.readConstantLong().AsGoString()
 			vm.Globals[name] = vm.peek(0)
 			vm.pop()
-			break
+
 		case opcode.OP_SET_GLOBAL:
 			name := vm.readConstant().AsGoString()
 			_, present := vm.Globals[name]
@@ -156,7 +156,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 			vm.Globals[name] = vm.peek(0)
-			break
+
 		case opcode.OP_SET_GLOBAL_LONG:
 			name := vm.readConstantLong().AsGoString()
 			_, present := vm.Globals[name]
@@ -165,12 +165,12 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 			vm.Globals[name] = vm.peek(0)
-			break
+
 		case opcode.OP_EQUAL:
 			b := vm.pop()
 			a := vm.pop()
 			vm.push(value.New(valuetype.VAL_BOOL, value.ValuesEqual(a, b)))
-			break
+
 		case opcode.OP_GREATER:
 			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 				vm.runtimeError("Operands must be numbers.")
@@ -180,7 +180,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.binaryOP(valuetype.VAL_BOOL, func(a, b value.Value) interface{} {
 				return a.AsNumber() > b.AsNumber()
 			})
-			break
+
 		case opcode.OP_LESS:
 			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 				vm.runtimeError("Operands must be numbers.")
@@ -190,7 +190,6 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.binaryOP(valuetype.VAL_BOOL, func(a, b value.Value) interface{} {
 				return a.AsNumber() < b.AsNumber()
 			})
-			break
 
 		case opcode.OP_ADD:
 			if vm.peek(0).IsString() && vm.peek(1).IsString() {
@@ -204,7 +203,6 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 
-			break
 		case opcode.OP_MULTIPLY:
 			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 				vm.runtimeError("Operands must be numbers.")
@@ -214,7 +212,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
 				return a.AsNumber() * b.AsNumber()
 			})
-			break
+
 		case opcode.OP_DIVIDE:
 			if !vm.peek(0).IsNumber() || !vm.peek(1).IsNumber() {
 				vm.runtimeError("Operands must be numbers.")
@@ -224,10 +222,10 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.binaryOP(valuetype.VAL_NUMBER, func(a, b value.Value) interface{} {
 				return a.AsNumber() / b.AsNumber()
 			})
-			break
+
 		case opcode.OP_NOT:
 			vm.push(value.New(valuetype.VAL_BOOL, isFalsey(vm.pop())))
-			break
+
 		case opcode.OP_NEGATE:
 			if !vm.peek(0).IsNumber() {
 				vm.runtimeError("Operand must be a number")
@@ -235,32 +233,32 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			}
 
 			vm.push(value.New(valuetype.VAL_NUMBER, -vm.pop().AsNumber()))
-			break
+
 		case opcode.OP_PRINT:
 			vm.pop().PrintValue()
 			fmt.Printf("\n")
-			break
+
 		case opcode.OP_JUMP:
 			offset := vm.readShort()
 			frame.IP = unsafecode.Increment(frame.IP, int(offset))
-			break
+
 		case opcode.OP_JUMP_IF_FALSE:
 			offset := vm.readShort()
 			if isFalsey(vm.peek(0)) {
 				frame.IP = unsafecode.Increment(frame.IP, int(offset))
 			}
-			break
+
 		case opcode.OP_LOOP:
 			offset := vm.readShort()
 			frame.IP = unsafecode.Decrement(frame.IP, int(offset))
-			break
+
 		case opcode.OP_CALL:
 			argCount := vm.readByte()
 			if !vm.callValue(vm.peek(int(argCount)), int(argCount)) {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 			frame = &vm.Frames[len(vm.Frames)-1]
-			break
+
 		case opcode.OP_RETURN:
 			result := vm.pop()
 
@@ -279,7 +277,7 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.push(result)
 
 			frame = &vm.Frames[len(vm.Frames)-1]
-			break
+
 		}
 	}
 }
@@ -319,7 +317,7 @@ func (vm *VM) call(function *value.ObjFunction, argCount int) bool {
 		return false
 	}
 
-	frame := CallFrame{Function: function, IP: &((function.Chunk.GetCode())[0]), Slots: len(vm.Stack)-argCount-1}
+	frame := CallFrame{Function: function, IP: &((function.Chunk.GetCode())[0]), Slots: len(vm.Stack) - argCount - 1}
 	vm.Frames = append(vm.Frames, frame)
 
 	return true
@@ -330,13 +328,12 @@ func (vm *VM) callValue(callee value.Value, argCount int) bool {
 		switch callee.ObjType() {
 		case objecttype.OBJ_FUNCTION:
 			return vm.call(callee.AsFunction(), argCount)
-			break
 
 		case objecttype.OBJ_NATIVE:
 			native := callee.AsNative()
 			result := native.Function(argCount, vm.Stack[len(vm.Stack)-argCount:])
 
-			for i := 0; i < argCount + 1; i++ {
+			for i := 0; i < argCount+1; i++ {
 				vm.pop()
 			}
 			vm.push(result)
@@ -344,7 +341,7 @@ func (vm *VM) callValue(callee value.Value, argCount int) bool {
 
 		default:
 			// Non-callable object type.
-			break
+
 		}
 	}
 
@@ -450,8 +447,7 @@ func (vm *VM) runtimeError(format string, args ...interface{}) {
 	vm.resetStack()
 }
 
-
-func (vm *VM) defineNative(name string , function value.NativeFn) {
+func (vm *VM) defineNative(name string, function value.NativeFn) {
 	vm.push(value.NewObjString(name))
 	vm.push(value.NewObjNative(value.NewNative(function)))
 	vm.Globals[vm.Stack[0].AsGoString()] = vm.Stack[1]

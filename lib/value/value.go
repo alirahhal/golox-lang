@@ -24,7 +24,7 @@ type ObjFunction struct {
 	Obj
 	Arity int
 	Chunk FuncChunk
-	Name *ObjString
+	Name  *ObjString
 }
 
 type NativeFn func(argCount int, args []Value) Value
@@ -160,16 +160,16 @@ func (value Value) PrintValue() {
 		} else {
 			fmt.Printf("false")
 		}
-		break
+
 	case valuetype.VAL_NIL:
 		fmt.Printf("nil")
-		break
+
 	case valuetype.VAL_NUMBER:
 		fmt.Printf("%g", value.AsNumber())
-		break
+
 	case valuetype.VAL_OBJ:
 		value.PrintObject()
-		break
+
 	}
 }
 
@@ -185,14 +185,13 @@ func (value Value) PrintObject() {
 	switch value.ObjType() {
 	case objecttype.OBJ_FUNCTION:
 		printFunction(value.AsFunction())
-		break
+
 	case objecttype.OBJ_NATIVE:
 		fmt.Printf("<native fn>")
-		break
+
 	case objecttype.OBJ_STRING:
 		fmt.Printf("%s", value.AsGoString())
-		break
-	
+
 	}
 }
 
@@ -212,7 +211,7 @@ func ValuesEqual(a Value, b Value) bool {
 		aObj := a.AsObj()
 		bObj := b.AsObj()
 
-		if (aObj.Type == objecttype.OBJ_STRING) {
+		if aObj.Type == objecttype.OBJ_STRING {
 			return a.AsGoString() == b.AsGoString()
 		} else {
 			return aObj == bObj

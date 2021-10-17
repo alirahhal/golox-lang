@@ -6,13 +6,13 @@ import (
 	"golanglox/lib/vm"
 	"golanglox/lib/vm/interpretresult"
 	"io/ioutil"
+
 	// "log"
 	"os"
 	// "time"
 )
 
 func main() {
-	
 
 	vm := vm.New()
 	vm.InitVM()

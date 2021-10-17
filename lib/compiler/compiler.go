@@ -30,8 +30,8 @@ type Parser struct {
 // Compiler struct
 type Compiler struct {
 	enclosing *Compiler
-	function *value.ObjFunction
-	funcType FunctionType
+	function  *value.ObjFunction
+	funcType  FunctionType
 
 	Locals     []Local
 	ScopeDepth int
@@ -284,34 +284,34 @@ func (parser *Parser) binary(canAssign bool) {
 	switch operatorType {
 	case tokentype.TOKEN_BANG_EQUAL:
 		parser.emitBytes(byte(opcode.OP_EQUAL), byte(opcode.OP_NOT))
-		break
+
 	case tokentype.TOKEN_EQUAL_EQUAL:
 		parser.emitByte(byte(opcode.OP_EQUAL))
-		break
+
 	case tokentype.TOKEN_GREATER:
 		parser.emitByte(byte(opcode.OP_GREATER))
-		break
+
 	case tokentype.TOKEN_GREATER_EQUAL:
 		parser.emitBytes(byte(opcode.OP_LESS), byte(opcode.OP_NOT))
-		break
+
 	case tokentype.TOKEN_LESS:
 		parser.emitByte(byte(opcode.OP_LESS))
-		break
+
 	case tokentype.TOKEN_LESS_EQUAL:
 		parser.emitBytes(byte(opcode.OP_GREATER), byte(opcode.OP_NOT))
-		break
+
 	case tokentype.TOKEN_PLUS:
 		parser.emitByte(byte(opcode.OP_ADD))
-		break
+
 	case tokentype.TOKEN_MINUS:
 		parser.emitBytes(byte(opcode.OP_NEGATE), byte(opcode.OP_ADD))
-		break
+
 	case tokentype.TOKEN_STAR:
 		parser.emitByte(byte(opcode.OP_MULTIPLY))
-		break
+
 	case tokentype.TOKEN_SLASH:
 		parser.emitByte(byte(opcode.OP_DIVIDE))
-		break
+
 	default:
 		return
 	}
@@ -326,13 +326,13 @@ func (parser *Parser) literal(canAssign bool) {
 	switch parser.Previous.Type {
 	case tokentype.TOKEN_FALSE:
 		parser.emitByte(byte(opcode.OP_FALSE))
-		break
+
 	case tokentype.TOKEN_NIL:
 		parser.emitByte(byte(opcode.OP_NIL))
-		break
+
 	case tokentype.TOKEN_TRUE:
 		parser.emitByte(byte(opcode.OP_TRUE))
-		break
+
 	default:
 		return
 	}
@@ -419,10 +419,10 @@ func (parser *Parser) unary(canAssign bool) {
 	switch operatorType {
 	case tokentype.TOKEN_BANG:
 		parser.emitByte(byte(opcode.OP_NOT))
-		break
+
 	case tokentype.TOKEN_MINUS:
 		parser.emitByte(byte(opcode.OP_NEGATE))
-		break
+
 	default:
 		return
 	}
@@ -532,7 +532,7 @@ func (parser *Parser) argumentList() byte {
 	if !parser.check(tokentype.TOKEN_RIGHT_PAREN) {
 		for {
 			parser.expression()
-			
+
 			if argCount == 255 {
 				parser.error("Cant have more than 255 arguments.")
 			}

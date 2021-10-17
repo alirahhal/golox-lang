@@ -155,12 +155,10 @@ func (scanner *Scanner) skipWhiteSpace() {
 		switch c {
 		case ' ', '\r', '\t':
 			scanner.advance()
-			break
 
 		case '\n':
 			scanner.Line++
 			scanner.advance()
-			break
 
 		case '/':
 			if scanner.peekNext() == '/' {
@@ -171,7 +169,6 @@ func (scanner *Scanner) skipWhiteSpace() {
 			} else {
 				return
 			}
-			break
 
 		default:
 			return
@@ -206,7 +203,6 @@ func (scanner *Scanner) identifierType() tokentype.TokenType {
 				return scanner.checkKeyword(2, 1, "n", tokentype.TOKEN_FUN)
 			}
 		}
-		break
 	case 'i':
 		return scanner.checkKeyword(1, 1, "f", tokentype.TOKEN_IF)
 	case 'n':
@@ -228,7 +224,6 @@ func (scanner *Scanner) identifierType() tokentype.TokenType {
 				return scanner.checkKeyword(2, 2, "ue", tokentype.TOKEN_TRUE)
 			}
 		}
-		break
 	case 'v':
 		return scanner.checkKeyword(1, 2, "ar", tokentype.TOKEN_VAR)
 	case 'w':
