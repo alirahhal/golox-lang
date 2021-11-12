@@ -3,8 +3,8 @@ package debug
 import (
 	"encoding/binary"
 	"fmt"
-	"golanglox/lib/chunk"
-	"golanglox/lib/chunk/opcode"
+	"golox-lang/lib/chunk"
+	"golox-lang/lib/chunk/opcode"
 )
 
 func DisassembleChunk(chunk *chunk.Chunk, name string) {

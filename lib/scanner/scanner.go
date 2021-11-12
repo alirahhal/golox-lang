@@ -1,8 +1,8 @@
 package scanner
 
 import (
-	"golanglox/lib/scanner/token"
-	"golanglox/lib/scanner/token/tokentype"
+	"golox-lang/lib/scanner/token"
+	"golox-lang/lib/scanner/token/tokentype"
 	"unicode"
 )
 

@@ -1,8 +1,8 @@
 package chunk
 
 import (
-	"golanglox/lib/chunk/opcode"
-	"golanglox/lib/value"
+	"golox-lang/lib/chunk/opcode"
+	"golox-lang/lib/value"
 )
 
 // Chunk struct

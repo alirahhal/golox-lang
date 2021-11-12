@@ -1,6 +1,6 @@
 package token
 
-import "golanglox/lib/scanner/token/tokentype"
+import "golox-lang/lib/scanner/token/tokentype"
 
 type Token struct {
 	Type   tokentype.TokenType

@@ -1,7 +1,7 @@
 package vm
 
 import (
-	"golanglox/lib/chunk"
+	"golox-lang/lib/chunk"
 )
 
 func createChunkForTesting(bytes ...byte) *chunk.Chunk {

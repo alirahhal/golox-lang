@@ -1,9 +1,9 @@
 package chunk
 
 import (
-	"golanglox/lib/chunk/opcode"
-	"golanglox/lib/value"
-	"golanglox/lib/value/valuetype"
+	"golox-lang/lib/chunk/opcode"
+	"golox-lang/lib/value"
+	"golox-lang/lib/value/valuetype"
 	"testing"
 )
 

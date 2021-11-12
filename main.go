@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"golanglox/lib/vm"
-	"golanglox/lib/vm/interpretresult"
+	"golox-lang/lib/vm"
+	"golox-lang/lib/vm/interpretresult"
 	"io/ioutil"
 
 	// "log"

@@ -1,7 +1,7 @@
 package scanner
 
 import (
-	"golanglox/lib/scanner/token/tokentype"
+	"golox-lang/lib/scanner/token/tokentype"
 	"testing"
 )
 

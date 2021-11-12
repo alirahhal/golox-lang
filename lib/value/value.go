@@ -2,8 +2,8 @@ package value
 
 import (
 	"fmt"
-	"golanglox/lib/value/objecttype"
-	"golanglox/lib/value/valuetype"
+	"golox-lang/lib/value/objecttype"
+	"golox-lang/lib/value/valuetype"
 	"unsafe"
 )
 
