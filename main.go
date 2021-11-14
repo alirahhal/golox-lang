@@ -22,7 +22,7 @@ func main() {
 	} else if len(os.Args) == 2 {
 		runFile(os.Args[1], vm)
 	} else {
-		fmt.Print("Usage: clox [path]\n")
+		fmt.Print("Wrong number of arguments\n")
 		os.Exit(64)
 	}
 
