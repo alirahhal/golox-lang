@@ -7,19 +7,16 @@ import (
 	"unsafe"
 )
 
-// Obj struct
 type Obj struct {
 	Type objecttype.ObjType
 }
 
-// FuncChunk is introduced here to solve the circular dependecy problem
 type FuncChunk interface {
 	GetCode() []byte
 	GetLines() []int
 	GetConstants() ValueArray
 }
 
-// ObjFunction struct
 type ObjFunction struct {
 	Obj
 	Arity int
@@ -34,19 +31,16 @@ type ObjNative struct {
 	Function NativeFn
 }
 
-// ObjString struct
 type ObjString struct {
 	Obj
 	String string
 }
 
-// Value struct
 type Value struct {
 	Type valuetype.ValueType
 	Data interface{}
 }
 
-// New return new non object Value
 func New(valType valuetype.ValueType, val interface{}) Value {
 	return Value{Type: valType, Data: val}
 }
@@ -69,7 +63,6 @@ func NewObjNative(val *ObjNative) Value {
 	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(val))}
 }
 
-// NewObjString return ObjString Value
 func NewObjString(val string) Value {
 	valObj := &ObjString{Obj: Obj{Type: objecttype.OBJ_STRING}, String: val}
 	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(valObj))}
@@ -139,7 +132,6 @@ func (value Value) isObjType(objType objecttype.ObjType) bool {
 	return value.IsObj() && value.ObjType() == objType
 }
 
-// ValueArray struct
 type ValueArray struct {
 	Values []Value
 }

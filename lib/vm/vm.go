@@ -28,7 +28,6 @@ type CallFrame struct {
 	Slots    int
 }
 
-// VM struct
 type VM struct {
 	Frames []CallFrame
 
@@ -40,19 +39,16 @@ func clockNative(argCount int, args []value.Value) value.Value {
 	return value.New(valuetype.VAL_NUMBER, float64(time.Now().UnixNano()/(int64(time.Millisecond)/int64(time.Nanosecond))))
 }
 
-// New return a pointer to a new VM struct
 func New() *VM {
 	return new(VM)
 }
 
-// InitVM intitialze VM struct
 func (vm *VM) InitVM() {
 	vm.resetStack()
 
 	vm.defineNative("clock", clockNative)
 }
 
-// Interpret takes a source code and fires off the VM execution pipeline
 func (vm *VM) Interpret(source string) interpretresult.InterpretResult {
 	function := compiler.Compile(source)
 	if function == nil {
@@ -282,12 +278,10 @@ func (vm *VM) run() interpretresult.InterpretResult {
 	}
 }
 
-// Push appends a new Value to the vm`s stack
 func (vm *VM) push(val value.Value) {
 	vm.Stack = append(vm.Stack, val)
 }
 
-// Pop pops a Value from the vm`s stack
 func (vm *VM) pop() value.Value {
 	defer vm.shrinkStack()
 
@@ -296,7 +290,6 @@ func (vm *VM) pop() value.Value {
 	return x
 }
 
-// Pop pops a Frame from the vm`s call stack
 func (vm *VM) popFrame() {
 	vm.Frames = vm.Frames[:len(vm.Frames)-1]
 }

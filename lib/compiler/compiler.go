@@ -16,7 +16,6 @@ import (
 	"strconv"
 )
 
-// Parser struct
 type Parser struct {
 	Current   token.Token
 	Previous  token.Token
@@ -27,7 +26,6 @@ type Parser struct {
 	scanner *scanner.Scanner
 }
 
-// Compiler struct
 type Compiler struct {
 	enclosing *Compiler
 	function  *value.ObjFunction
@@ -37,7 +35,6 @@ type Compiler struct {
 	ScopeDepth int
 }
 
-// Local struct
 type Local struct {
 	Name  token.Token
 	depth int
@@ -50,10 +47,8 @@ const (
 	TYPE_SCRIPT
 )
 
-// ParseFn func
 type ParseFn func(receiver *Parser, canAssign bool)
 
-// ParseRule struct
 type ParseRule struct {
 	Prefix     ParseFn
 	Infix      ParseFn
@@ -62,7 +57,6 @@ type ParseRule struct {
 
 var rules map[tokentype.TokenType]ParseRule
 
-// New creates a new parser and returns it
 func New(scanner *scanner.Scanner) *Parser {
 	parser := new(Parser)
 	parser.HadError = false
@@ -137,7 +131,6 @@ func init() {
 	rules[tokentype.TOKEN_EOF] = ParseRule{nil, nil, precedence.PREC_NONE}
 }
 
-// Compile the input source string and emits byteCode
 func Compile(source string) *value.ObjFunction {
 	scanner := scanner.New()
 	scanner.InitScanner(source)

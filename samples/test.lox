@@ -2,20 +2,20 @@
 
 
 
-fun fib(n) {
-  if (n < 2) return n;
-  return fib(n - 2) + fib(n - 1);
-}
+// fun fib(n) {
+//   if (n < 2) return n;
+//   return fib(n - 2) + fib(n - 1);
+// }
 
-var start = clock();
-print fib(12);
-print clock() - start;
+// var start = clock();
+// print fib(12);
+// print clock() - start;
 
 
 
 // var start = clock();
 
-// for (var a = 0; a < 10000000; a = a + 1) {}
+// for (var a = 0; a < 1000000; a = a + 1) {}
 // var a = "Done";
 // if (1 == 1) {
 //     var x = 3;
@@ -29,11 +29,11 @@ print clock() - start;
 
 
 
-// fun areWeHavingItYet() {
-//   return "Yes we are!";
-// }
+fun areWeHavingItYet() {
+  return "Yes we are!";
+}
 
-// print(areWeHavingItYet());
+print(areWeHavingItYet());
 
 
 

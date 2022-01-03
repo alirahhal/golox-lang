@@ -7,9 +7,7 @@ import (
 	"golox-lang/lib/vm/interpretresult"
 	"io/ioutil"
 
-	// "log"
 	"os"
-	// "time"
 )
 
 func main() {
@@ -53,13 +51,7 @@ func runFile(path string, vm *vm.VM) {
 
 	source := string(fileContent)
 
-	// start := time.Now()
-
 	result := vm.Interpret(source)
-
-	// elapsed := time.Since(start)
-	// fmt.Print("\n\n")
-	// log.Printf("Running took %s", elapsed.String())
 
 	if result == interpretresult.INTERPRET_COMPILE_ERROR {
 		os.Exit(65)
