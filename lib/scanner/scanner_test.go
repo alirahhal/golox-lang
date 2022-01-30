@@ -8,8 +8,7 @@ import (
 func TestScanToken(t *testing.T) {
 	// test for skipping leading whitespaces
 	t.Run("skip leading whitespaces", func(t *testing.T) {
-		s := New()
-		s.InitScanner(" \r\t hello world")
+		s := New(" \r\t hello world")
 
 		s.ScanToken()
 		if s.Source[s.Start:] != "hello world" {
@@ -19,8 +18,7 @@ func TestScanToken(t *testing.T) {
 
 	// test for incementing line
 	t.Run("increment line", func(t *testing.T) {
-		s := New()
-		s.InitScanner(" \n hello world")
+		s := New(" \n hello world")
 
 		s.ScanToken()
 		if s.Line != 2 {
@@ -243,8 +241,7 @@ func TestScanToken(t *testing.T) {
 		}
 
 		for _, item := range dataItems {
-			s := New()
-			s.InitScanner(item.source)
+			s := New(item.source)
 			tkn := s.ScanToken()
 
 			if tkn.Type != item.wantedTokenType || tkn.Lexeme != item.wantedLexeme {

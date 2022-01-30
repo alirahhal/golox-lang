@@ -13,15 +13,14 @@ type Scanner struct {
 	Line    int
 }
 
-func New() *Scanner {
-	return new(Scanner)
-}
-
-func (scanner *Scanner) InitScanner(source string) {
+func New(source string) *Scanner {
+	scanner := new(Scanner)
 	scanner.Source = source
 	scanner.Start = 0
 	scanner.Current = 0
 	scanner.Line = 1
+
+	return scanner
 }
 
 func isDigit(c rune) bool {
@@ -114,7 +113,6 @@ func (scanner *Scanner) advance() rune {
 
 func (scanner *Scanner) peek() rune {
 	if scanner.isAtEnd() {
-		// handle differently?
 		return rune(0)
 	}
 	return []rune(scanner.Source)[scanner.Current]
@@ -122,7 +120,6 @@ func (scanner *Scanner) peek() rune {
 
 func (scanner *Scanner) peekNext() rune {
 	if scanner.Current+1 >= len(scanner.Source) {
-		// handle differently?
 		return rune(0)
 	}
 	return []rune(scanner.Source)[scanner.Current+1]

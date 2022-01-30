@@ -8,9 +8,9 @@ import (
 	"golox-lang/lib/compiler"
 	"golox-lang/lib/config"
 	"golox-lang/lib/debug"
+	"golox-lang/lib/object/objtype"
 	"golox-lang/lib/utils/unsafecode"
 	"golox-lang/lib/value"
-	"golox-lang/lib/value/objecttype"
 	"golox-lang/lib/value/valuetype"
 	"golox-lang/lib/vm/interpretresult"
 	"os"
@@ -319,10 +319,10 @@ func (vm *VM) call(function *value.ObjFunction, argCount int) bool {
 func (vm *VM) callValue(callee value.Value, argCount int) bool {
 	if callee.IsObj() {
 		switch callee.ObjType() {
-		case objecttype.OBJ_FUNCTION:
+		case objtype.OBJ_FUNCTION:
 			return vm.call(callee.AsFunction(), argCount)
 
-		case objecttype.OBJ_NATIVE:
+		case objtype.OBJ_NATIVE:
 			native := callee.AsNative()
 			result := native.Function(argCount, vm.Stack[len(vm.Stack)-argCount:])
 

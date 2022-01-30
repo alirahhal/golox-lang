@@ -1,5 +1,6 @@
 BINARY_DIR=bin
 SRC_NAME=.\main.go
+SAMPLE=.\samples\test.lox
 
 all: run
 
@@ -7,7 +8,7 @@ build:
 	@go build -o $(BINARY_DIR)/golox-lang.exe $(SRC_NAME)
 
 run:
-	@go run ${SRC_NAME} ${testfile}
+	@go run ${SRC_NAME} ${SAMPLE}
 
 install: go-get
 

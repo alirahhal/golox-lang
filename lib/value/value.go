@@ -2,14 +2,11 @@ package value
 
 import (
 	"fmt"
-	"golox-lang/lib/value/objecttype"
+	"golox-lang/lib/object"
+	"golox-lang/lib/object/objtype"
 	"golox-lang/lib/value/valuetype"
 	"unsafe"
 )
-
-type Obj struct {
-	Type objecttype.ObjType
-}
 
 type FuncChunk interface {
 	GetCode() []byte
@@ -18,7 +15,7 @@ type FuncChunk interface {
 }
 
 type ObjFunction struct {
-	Obj
+	object.Obj
 	Arity int
 	Chunk FuncChunk
 	Name  *ObjString
@@ -27,12 +24,12 @@ type ObjFunction struct {
 type NativeFn func(argCount int, args []Value) Value
 
 type ObjNative struct {
-	Obj
+	object.Obj
 	Function NativeFn
 }
 
 type ObjString struct {
-	Obj
+	object.Obj
 	String string
 }
 
@@ -46,26 +43,26 @@ func New(valType valuetype.ValueType, val interface{}) Value {
 }
 
 func NewFunction(c FuncChunk) *ObjFunction {
-	valObj := &ObjFunction{Obj: Obj{Type: objecttype.OBJ_FUNCTION}, Arity: 0, Name: nil, Chunk: c}
+	valObj := &ObjFunction{Obj: object.Obj{Type: objtype.OBJ_FUNCTION}, Arity: 0, Name: nil, Chunk: c}
 	return valObj
 }
 
 func NewObjFunction(val *ObjFunction) Value {
-	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(val))}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(val))}
 }
 
 func NewNative(function NativeFn) *ObjNative {
-	native := &ObjNative{Obj: Obj{Type: objecttype.OBJ_NATIVE}, Function: function}
+	native := &ObjNative{Obj: object.Obj{Type: objtype.OBJ_NATIVE}, Function: function}
 	return native
 }
 
 func NewObjNative(val *ObjNative) Value {
-	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(val))}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(val))}
 }
 
 func NewObjString(val string) Value {
-	valObj := &ObjString{Obj: Obj{Type: objecttype.OBJ_STRING}, String: val}
-	return Value{Type: valuetype.VAL_OBJ, Data: (*Obj)(unsafe.Pointer(valObj))}
+	valObj := &ObjString{Obj: object.Obj{Type: objtype.OBJ_STRING}, String: val}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
 }
 
 func (value Value) AsBool() bool {
@@ -76,8 +73,8 @@ func (value Value) AsNumber() float64 {
 	return value.Data.(float64)
 }
 
-func (value Value) AsObj() *Obj {
-	return value.Data.(*Obj)
+func (value Value) AsObj() *object.Obj {
+	return value.Data.(*object.Obj)
 }
 
 func (value Value) AsFunction() *ObjFunction {
@@ -112,24 +109,24 @@ func (value Value) IsObj() bool {
 	return value.Type == valuetype.VAL_OBJ
 }
 
-func (value Value) ObjType() objecttype.ObjType {
+func (value Value) ObjType() objtype.ObjectType {
 	return value.AsObj().Type
 }
 
 func (value Value) IsFunction() bool {
-	return value.isObjType(objecttype.OBJ_FUNCTION)
+	return value.isobjtype(objtype.OBJ_FUNCTION)
 }
 
 func (value Value) IsNative() bool {
-	return value.isObjType(objecttype.OBJ_NATIVE)
+	return value.isobjtype(objtype.OBJ_NATIVE)
 }
 
 func (value Value) IsString() bool {
-	return value.isObjType(objecttype.OBJ_STRING)
+	return value.isobjtype(objtype.OBJ_STRING)
 }
 
-func (value Value) isObjType(objType objecttype.ObjType) bool {
-	return value.IsObj() && value.ObjType() == objType
+func (value Value) isobjtype(objectType objtype.ObjectType) bool {
+	return value.IsObj() && value.ObjType() == objectType
 }
 
 type ValueArray struct {
@@ -175,13 +172,13 @@ func printFunction(function *ObjFunction) {
 
 func (value Value) PrintObject() {
 	switch value.ObjType() {
-	case objecttype.OBJ_FUNCTION:
+	case objtype.OBJ_FUNCTION:
 		printFunction(value.AsFunction())
 
-	case objecttype.OBJ_NATIVE:
+	case objtype.OBJ_NATIVE:
 		fmt.Printf("<native fn>")
 
-	case objecttype.OBJ_STRING:
+	case objtype.OBJ_STRING:
 		fmt.Printf("%s", value.AsGoString())
 
 	}
@@ -203,7 +200,7 @@ func ValuesEqual(a Value, b Value) bool {
 		aObj := a.AsObj()
 		bObj := b.AsObj()
 
-		if aObj.Type == objecttype.OBJ_STRING {
+		if aObj.Type == objtype.OBJ_STRING {
 			return a.AsGoString() == b.AsGoString()
 		} else {
 			return aObj == bObj

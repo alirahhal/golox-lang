@@ -10,20 +10,20 @@ import (
 func DisassembleChunk(chunk *chunk.Chunk, name string) {
 	fmt.Printf("== %s ==\n", name)
 
-	for offset := 0; offset < len(chunk.Code); {
+	for offset := 0; offset < len(chunk.GetCode()); {
 		offset = DisassembleInstruction(chunk, offset)
 	}
 }
 
 func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 	fmt.Printf("%04d ", offset)
-	if offset > 0 && chunk.Lines[offset] == chunk.Lines[offset-1] {
+	if offset > 0 && chunk.GetLines()[offset] == chunk.GetLines()[offset-1] {
 		fmt.Printf("   | ")
 	} else {
-		fmt.Printf("%4d ", chunk.Lines[offset])
+		fmt.Printf("%4d ", chunk.GetLines()[offset])
 	}
 
-	instruction := opcode.OpCode(chunk.Code[offset])
+	instruction := opcode.OpCode(chunk.GetCode()[offset])
 	switch instruction {
 	case opcode.OP_CONSTANT:
 		return constantInstruction("OP_CONSTANT", chunk, offset)
@@ -97,14 +97,14 @@ func simpleInstruction(name string, offset int) int {
 }
 
 func byteInstruction(name string, chunk *chunk.Chunk, offset int) int {
-	slot := chunk.Code[offset+1]
+	slot := chunk.GetCode()[offset+1]
 	fmt.Printf("%s %4d\n", name, slot)
 	return offset + 2
 }
 
 func byteInstructionLong(name string, chunk *chunk.Chunk, offset int) int {
 	bytes := make([]byte, 4)
-	copy(bytes, chunk.Code[offset+1:offset+4])
+	copy(bytes, chunk.GetCode()[offset+1:offset+4])
 	var slot uint32 = binary.LittleEndian.Uint32(bytes)
 	fmt.Printf("%s %4d\n", name, slot)
 	return offset + 4
@@ -112,26 +112,26 @@ func byteInstructionLong(name string, chunk *chunk.Chunk, offset int) int {
 
 func jumpInstruction(name string, sign int, chunk *chunk.Chunk, offset int) int {
 	bytes := make([]byte, 4)
-	copy(bytes, chunk.Code[offset+1:offset+3])
+	copy(bytes, chunk.GetCode()[offset+1:offset+3])
 	jump := binary.BigEndian.Uint16(bytes)
 	fmt.Printf("%s %4d -> %d\n", name, offset, offset+3+sign*int(jump))
 	return offset + 3
 }
 
 func constantInstruction(name string, chunk *chunk.Chunk, offset int) int {
-	constant := chunk.Code[offset+1]
+	constant := chunk.GetCode()[offset+1]
 	fmt.Printf("%s %4d ", name, constant)
-	chunk.Constants.Values[constant].PrintValue()
+	chunk.GetConstants().Values[constant].PrintValue()
 	fmt.Print("\n")
 	return offset + 2
 }
 
 func longConstantInstruction(name string, chunk *chunk.Chunk, offset int) int {
 	constBytes := make([]byte, 4)
-	copy(constBytes, chunk.Code[offset+1:offset+4])
+	copy(constBytes, chunk.GetCode()[offset+1:offset+4])
 	var constant uint32 = binary.LittleEndian.Uint32(constBytes)
 	fmt.Printf("%s %4d ", name, constant)
-	chunk.Constants.Values[constant].PrintValue()
+	chunk.GetConstants().Values[constant].PrintValue()
 	fmt.Print("\n")
 	return offset + 4
 }

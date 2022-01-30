@@ -6,9 +6,9 @@ import (
 )
 
 type Chunk struct {
-	Code      []byte
-	Lines     []int
-	Constants value.ValueArray
+	code      []byte
+	lines     []int
+	constants value.ValueArray
 }
 
 func New() *Chunk {
@@ -16,20 +16,20 @@ func New() *Chunk {
 }
 
 func (chunk *Chunk) GetCode() []byte {
-	return chunk.Code
+	return chunk.code
 }
 
 func (chunk *Chunk) GetLines() []int {
-	return chunk.Lines
+	return chunk.lines
 }
 
 func (chunk *Chunk) GetConstants() value.ValueArray {
-	return chunk.Constants
+	return chunk.constants
 }
 
 func (chunk *Chunk) WriteChunk(b byte, line int) {
-	chunk.Code = append(chunk.Code, b)
-	chunk.Lines = append(chunk.Lines, line)
+	chunk.code = append(chunk.code, b)
+	chunk.lines = append(chunk.lines, line)
 }
 
 func (chunk *Chunk) WriteConstant(value value.Value, line int) {
@@ -47,12 +47,12 @@ func (chunk *Chunk) WriteConstant(value value.Value, line int) {
 }
 
 func (chunk *Chunk) FreeChunk() {
-	chunk.Code = make([]byte, 0)
-	chunk.Lines = make([]int, 0)
-	chunk.Constants.FreeValueArray()
+	chunk.code = make([]byte, 0)
+	chunk.lines = make([]int, 0)
+	chunk.constants.FreeValueArray()
 }
 
 func (chunk *Chunk) AddConstant(value value.Value) int {
-	chunk.Constants.WriteValueArray(value)
-	return len(chunk.Constants.Values) - 1
+	chunk.constants.WriteValueArray(value)
+	return len(chunk.constants.Values) - 1
 }

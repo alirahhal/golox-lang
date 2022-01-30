@@ -77,10 +77,9 @@ func (parser *Parser) initCompiler(funcType FunctionType) *Compiler {
 	parser.CurrentC = compiler
 
 	if funcType != TYPE_SCRIPT {
-		compiler.function.Name = value.NewObjString(parser.Previous.Lexeme).AsString() // Todo: !!!
+		compiler.function.Name = value.NewObjString(parser.Previous.Lexeme).AsString()
 	}
 
-	// **** not sure ****
 	local := Local{depth: 0, Name: token.Token{Lexeme: ""}}
 	compiler.Locals = append(compiler.Locals, local)
 
@@ -132,8 +131,7 @@ func init() {
 }
 
 func Compile(source string) *value.ObjFunction {
-	scanner := scanner.New()
-	scanner.InitScanner(source)
+	scanner := scanner.New(source)
 
 	parser := New(scanner)
 	parser.initCompiler(TYPE_SCRIPT)
@@ -198,7 +196,7 @@ func (parser *Parser) emitBytes(b1 byte, b2 byte) {
 func (parser *Parser) emitLoop(loopStart int) {
 	parser.emitByte(byte(opcode.OP_LOOP))
 
-	offset := len(parser.currentChunk().Code) - loopStart + 2
+	offset := len(parser.currentChunk().GetCode()) - loopStart + 2
 	// if (offset > UINT16_MAX) error("Loop body too large.");
 
 	parser.emitByte(byte((offset >> 8) & 0xff))
@@ -209,7 +207,7 @@ func (parser *Parser) emitJump(instruction opcode.OpCode) int {
 	parser.emitByte(byte(instruction))
 	parser.emitByte(0xff)
 	parser.emitByte(0xff)
-	return len(parser.currentChunk().Code) - 2
+	return len(parser.currentChunk().GetCode()) - 2
 }
 
 func (parser *Parser) emitReturn() {
@@ -223,14 +221,14 @@ func (parser *Parser) emitConstant(value value.Value) {
 
 func (parser *Parser) patchJump(offset int) {
 	// -2 to adjust for the bytecode for the jump offset itself.
-	jump := len(parser.currentChunk().Code) - offset - 2
+	jump := len(parser.currentChunk().GetCode()) - offset - 2
 
 	// if (jump > UINT16_MAX) {
 	// 	error("Too much code to jump over.");
 	//   }
 
-	parser.currentChunk().Code[offset] = byte((jump >> 8) & 0xff)
-	parser.currentChunk().Code[offset+1] = byte(jump & 0xff)
+	parser.currentChunk().GetCode()[offset] = byte((jump >> 8) & 0xff)
+	parser.currentChunk().GetCode()[offset+1] = byte(jump & 0xff)
 }
 
 func (parser *Parser) endCompiler() *value.ObjFunction {
@@ -637,7 +635,7 @@ func (parser *Parser) forStatement() {
 		parser.expressionStatement()
 	}
 
-	loopStart := len(parser.currentChunk().Code)
+	loopStart := len(parser.currentChunk().GetCode())
 
 	exitJump := -1
 	if !parser.match(tokentype.TOKEN_SEMICOLON) {
@@ -652,7 +650,7 @@ func (parser *Parser) forStatement() {
 	if !parser.match(tokentype.TOKEN_RIGHT_PAREN) {
 		bodyJump := parser.emitJump(opcode.OP_JUMP)
 
-		incrementStart := len(parser.currentChunk().Code)
+		incrementStart := len(parser.currentChunk().GetCode())
 		parser.expression()
 		parser.emitByte(byte(opcode.OP_POP))
 		parser.consume(tokentype.TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.")
@@ -715,7 +713,7 @@ func (parser *Parser) returnStatement() {
 }
 
 func (parser *Parser) whileStatement() {
-	loopStart := len(parser.currentChunk().Code)
+	loopStart := len(parser.currentChunk().GetCode())
 
 	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after 'while'.")
 	parser.expression()
