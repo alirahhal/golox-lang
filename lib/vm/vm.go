@@ -162,6 +162,37 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			}
 			vm.Globals[name] = vm.peek(0)
 
+		case opcode.OP_GET_PROPERTY:
+			if !vm.peek(0).IsInstance() {
+				vm.runtimeError("Only instances have properties.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			instacne := vm.peek(0).AsInstance()
+			name := vm.readConstant().AsGoString()
+
+			value, present := instacne.Fields[name]
+			if !present {
+				vm.runtimeError("Undefined property '%s'.", name)
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			vm.pop() // Instance
+			vm.push(value)
+
+		case opcode.OP_SET_PROPERTY:
+			if !vm.peek(1).IsInstance() {
+				vm.runtimeError("Only instances have fields.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
+			instance := vm.peek(1).AsInstance()
+			name := vm.readConstant().AsGoString()
+			instance.Fields[name] = vm.peek(0)
+			value := vm.pop()
+			vm.pop()
+			vm.push(value)
+
 		case opcode.OP_EQUAL:
 			b := vm.pop()
 			a := vm.pop()

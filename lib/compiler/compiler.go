@@ -93,7 +93,7 @@ func init() {
 	rules[tokentype.TOKEN_LEFT_BRACE] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_RIGHT_BRACE] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_COMMA] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_DOT] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_DOT] = ParseRule{nil, (*Parser).dot, precedence.PREC_CALL}
 	rules[tokentype.TOKEN_MINUS] = ParseRule{(*Parser).unary, (*Parser).binary, precedence.PREC_TERM}
 	rules[tokentype.TOKEN_PLUS] = ParseRule{nil, (*Parser).binary, precedence.PREC_TERM}
 	rules[tokentype.TOKEN_SEMICOLON] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -311,6 +311,18 @@ func (parser *Parser) binary(canAssign bool) {
 func (parser *Parser) call(canAssign bool) {
 	argCount := parser.argumentList()
 	parser.emitBytes(byte(opcode.OP_CALL), argCount)
+}
+
+func (parser *Parser) dot(canAssign bool) {
+	parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect property name after '.'.")
+	name := parser.identifierConstant(&parser.Previous)
+
+	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
+		parser.expression()
+		parser.emitBytes(byte(opcode.OP_SET_PROPERTY), byte(name))
+	} else {
+		parser.emitBytes(byte(opcode.OP_GET_PROPERTY), byte(name))
+	}
 }
 
 func (parser *Parser) literal(canAssign bool) {

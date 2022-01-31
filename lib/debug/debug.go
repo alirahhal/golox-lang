@@ -57,6 +57,10 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return constantInstruction("OP_SET_GLOBAL", chunk, offset)
 	case opcode.OP_SET_GLOBAL_LONG:
 		return longConstantInstruction("OP_SET_GLOBAL_LONG", chunk, offset)
+	case opcode.OP_GET_PROPERTY:
+		return constantInstruction("OP_GET_PROPERTY", chunk, offset)
+	case opcode.OP_SET_PROPERTY:
+		return constantInstruction("OP_SET_PROPERTY", chunk, offset)
 	case opcode.OP_EQUAL:
 		return simpleInstruction("OP_EQUAL", offset)
 	case opcode.OP_GREATER:
