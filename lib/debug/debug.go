@@ -85,6 +85,8 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return byteInstruction("OP_CALL", chunk, offset)
 	case opcode.OP_RETURN:
 		return simpleInstruction("OP_RETURN", offset)
+	case opcode.OP_CLASS:
+		return constantInstruction("OP_CLASS", chunk, offset)
 	default:
 		fmt.Println("Unknown opcode ", instruction)
 		return offset + 1

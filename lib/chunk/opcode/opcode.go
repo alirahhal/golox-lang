@@ -33,4 +33,5 @@ const (
 	OP_LOOP
 	OP_CALL
 	OP_RETURN
+	OP_CLASS
 )

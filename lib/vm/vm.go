@@ -274,6 +274,9 @@ func (vm *VM) run() interpretresult.InterpretResult {
 
 			frame = &vm.Frames[len(vm.Frames)-1]
 
+		case opcode.OP_CLASS:
+			vm.push(value.NewObjClass(vm.readConstant().AsGoString()))
+
 		}
 	}
 }
@@ -319,6 +322,11 @@ func (vm *VM) call(function *value.ObjFunction, argCount int) bool {
 func (vm *VM) callValue(callee value.Value, argCount int) bool {
 	if callee.IsObj() {
 		switch callee.ObjType() {
+		case objtype.OBJ_CLASS:
+			klass := callee.AsClass()
+			vm.Stack[len(vm.Stack)-argCount-1] = value.NewObjInstance(klass)
+			return true
+
 		case objtype.OBJ_FUNCTION:
 			return vm.call(callee.AsFunction(), argCount)
 

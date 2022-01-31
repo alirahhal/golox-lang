@@ -33,6 +33,17 @@ type ObjString struct {
 	String string
 }
 
+type ObjClass struct {
+	object.Obj
+	Name string
+}
+
+type ObjInstance struct {
+	object.Obj
+	Klass  *ObjClass
+	Fields map[string]Value
+}
+
 type Value struct {
 	Type valuetype.ValueType
 	Data interface{}
@@ -65,6 +76,16 @@ func NewObjString(val string) Value {
 	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
 }
 
+func NewObjClass(val string) Value {
+	valObj := &ObjClass{Obj: object.Obj{Type: objtype.OBJ_CLASS}, Name: val}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
+}
+
+func NewObjInstance(klass *ObjClass) Value {
+	valObj := &ObjInstance{Obj: object.Obj{Type: objtype.OBJ_INSTANCE}, Klass: klass, Fields: make(map[string]Value)}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
+}
+
 func (value Value) AsBool() bool {
 	return value.Data.(bool)
 }
@@ -87,6 +108,14 @@ func (value Value) AsNative() *ObjNative {
 
 func (value Value) AsString() *ObjString {
 	return (*ObjString)(unsafe.Pointer(value.AsObj()))
+}
+
+func (value Value) AsClass() *ObjClass {
+	return (*ObjClass)(unsafe.Pointer(value.AsObj()))
+}
+
+func (value Value) AsInstance() *ObjInstance {
+	return (*ObjInstance)(unsafe.Pointer(value.AsObj()))
 }
 
 func (value Value) AsGoString() string {
@@ -123,6 +152,14 @@ func (value Value) IsNative() bool {
 
 func (value Value) IsString() bool {
 	return value.isobjtype(objtype.OBJ_STRING)
+}
+
+func (value Value) IsClass() bool {
+	return value.isobjtype(objtype.OBJ_CLASS)
+}
+
+func (value Value) IsInstance() bool {
+	return value.isobjtype(objtype.OBJ_INSTANCE)
 }
 
 func (value Value) isobjtype(objectType objtype.ObjectType) bool {
@@ -180,6 +217,12 @@ func (value Value) PrintObject() {
 
 	case objtype.OBJ_STRING:
 		fmt.Printf("%s", value.AsGoString())
+
+	case objtype.OBJ_CLASS:
+		fmt.Printf("%s", value.AsClass().Name)
+
+	case objtype.OBJ_INSTANCE:
+		fmt.Printf("%s instance", value.AsInstance().Klass.Name)
 
 	}
 }

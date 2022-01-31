@@ -596,6 +596,19 @@ func (parser *Parser) function(funcType FunctionType) {
 	parser.emitConstant(value.NewObjFunction(function))
 }
 
+func (parser *Parser) classDeclaration() {
+	parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect class name.")
+	nameConstant := parser.identifierConstant(&parser.Previous)
+	parser.declareVariable()
+
+	// TODO: handle edge case (nameConstant > 255)
+	parser.emitBytes(byte(opcode.OP_CLASS), byte(nameConstant))
+	parser.defineVariable(nameConstant)
+
+	parser.consume(tokentype.TOKEN_LEFT_BRACE, "Expect '{' before class body.")
+	parser.consume(tokentype.TOKEN_RIGHT_BRACE, "Expect '}' after class body.")
+}
+
 func (parser *Parser) funDeclaration() {
 	global := parser.parserVariable("Expect function name.")
 	parser.markInitialized()
@@ -758,7 +771,9 @@ func (parser *Parser) synchronize() {
 }
 
 func (parser *Parser) declaration() {
-	if parser.match(tokentype.TOKEN_FUN) {
+	if parser.match(tokentype.TOKEN_CLASS) {
+		parser.classDeclaration()
+	} else if parser.match(tokentype.TOKEN_FUN) {
 		parser.funDeclaration()
 	} else if parser.match(tokentype.TOKEN_VAR) {
 		parser.varDeclaration()
