@@ -91,6 +91,8 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_RETURN", offset)
 	case opcode.OP_CLASS:
 		return constantInstruction("OP_CLASS", chunk, offset)
+	case opcode.OP_METHOD:
+		return constantInstruction("OP_METHOD", chunk, offset)
 	default:
 		fmt.Println("Unknown opcode ", instruction)
 		return offset + 1

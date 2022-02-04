@@ -122,7 +122,7 @@ func init() {
 	rules[tokentype.TOKEN_PRINT] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_RETURN] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_SUPER] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_THIS] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_THIS] = ParseRule{(*Parser).this, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_TRUE] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_VAR] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_WHILE] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -413,6 +413,10 @@ func (parser *Parser) variable(canAssign bool) {
 	parser.namedVariable(parser.Previous, canAssign)
 }
 
+func (parser *Parser) this(canAssign bool) {
+	parser.variable(false)
+}
+
 func (parser *Parser) unary(canAssign bool) {
 	operatorType := parser.Previous.Type
 
@@ -580,7 +584,7 @@ func (parser *Parser) function(funcType FunctionType) {
 	parser.initCompiler(funcType)
 	parser.beginScope()
 
-	// Compiler the parameter list.
+	// Compile the parameter list.
 	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after function name.")
 	if !parser.check(tokentype.TOKEN_RIGHT_PAREN) {
 		for {
@@ -608,8 +612,20 @@ func (parser *Parser) function(funcType FunctionType) {
 	parser.emitConstant(value.NewObjFunction(function))
 }
 
+func (parser *Parser) method() {
+	parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect method name.")
+	constant := parser.identifierConstant(&parser.Previous)
+
+	funcType := TYPE_FUNCTION
+	parser.function(funcType)
+
+	// TODO: handle edge case (nameConstant > 255)
+	parser.emitBytes(byte(opcode.OP_METHOD), byte(constant))
+}
+
 func (parser *Parser) classDeclaration() {
 	parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect class name.")
+	className := parser.Previous
 	nameConstant := parser.identifierConstant(&parser.Previous)
 	parser.declareVariable()
 
@@ -617,8 +633,13 @@ func (parser *Parser) classDeclaration() {
 	parser.emitBytes(byte(opcode.OP_CLASS), byte(nameConstant))
 	parser.defineVariable(nameConstant)
 
+	parser.namedVariable(className, false)
 	parser.consume(tokentype.TOKEN_LEFT_BRACE, "Expect '{' before class body.")
+	for !parser.check(tokentype.TOKEN_RIGHT_BRACE) && !parser.check(tokentype.TOKEN_EOF) {
+		parser.method()
+	}
 	parser.consume(tokentype.TOKEN_RIGHT_BRACE, "Expect '}' after class body.")
+	parser.emitByte(byte(opcode.OP_POP))
 }
 
 func (parser *Parser) funDeclaration() {

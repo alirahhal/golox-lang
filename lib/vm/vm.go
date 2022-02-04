@@ -172,13 +172,15 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			name := vm.readConstant().AsGoString()
 
 			value, present := instacne.Fields[name]
-			if !present {
-				vm.runtimeError("Undefined property '%s'.", name)
-				return interpretresult.INTERPRET_RUNTIME_ERROR
+			if present {
+				vm.pop() // Instance
+				vm.push(value)
+				break
 			}
 
-			vm.pop() // Instance
-			vm.push(value)
+			if !vm.bindMethod(instacne.Klass, name) {
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
 
 		case opcode.OP_SET_PROPERTY:
 			if !vm.peek(1).IsInstance() {
@@ -286,6 +288,9 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			}
 			frame = &vm.Frames[len(vm.Frames)-1]
 
+		case opcode.OP_METHOD:
+			vm.defineMethod(vm.readConstant().AsGoString())
+
 		case opcode.OP_RETURN:
 			result := vm.pop()
 
@@ -353,6 +358,11 @@ func (vm *VM) call(function *value.ObjFunction, argCount int) bool {
 func (vm *VM) callValue(callee value.Value, argCount int) bool {
 	if callee.IsObj() {
 		switch callee.ObjType() {
+
+		case objtype.OBJ_BOUND_METHOD:
+			bound := callee.AsBoundMethod()
+			return vm.call(bound.Method, argCount)
+
 		case objtype.OBJ_CLASS:
 			klass := callee.AsClass()
 			vm.Stack[len(vm.Stack)-argCount-1] = value.NewObjInstance(klass)
@@ -372,6 +382,7 @@ func (vm *VM) callValue(callee value.Value, argCount int) bool {
 			return true
 
 		default:
+			return false
 			// Non-callable object type.
 
 		}
@@ -379,6 +390,28 @@ func (vm *VM) callValue(callee value.Value, argCount int) bool {
 
 	vm.runtimeError("Can only call functions and classes.")
 	return false
+}
+
+func (vm *VM) bindMethod(klass *value.ObjClass, name string) bool {
+	method, present := klass.Methods[name]
+	if !present {
+		vm.runtimeError("Undefined property '%s'.", name)
+		return false
+	}
+
+	bound := value.NewObjBoundMethod(vm.peek(0), method)
+
+	vm.pop()
+	vm.push(bound)
+
+	return true
+}
+
+func (vm *VM) defineMethod(name string) {
+	method := vm.peek(0)
+	klass := vm.peek(1).AsClass()
+	klass.Methods[name] = method.AsFunction()
+	vm.pop()
 }
 
 func isFalsey(val value.Value) bool {

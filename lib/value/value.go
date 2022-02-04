@@ -35,13 +35,20 @@ type ObjString struct {
 
 type ObjClass struct {
 	object.Obj
-	Name string
+	Name    string
+	Methods map[string]*ObjFunction
 }
 
 type ObjInstance struct {
 	object.Obj
 	Klass  *ObjClass
 	Fields map[string]Value
+}
+
+type ObjBoundMethod struct {
+	object.Obj
+	Receiver Value
+	Method   *ObjFunction
 }
 
 type Value struct {
@@ -77,12 +84,17 @@ func NewObjString(val string) Value {
 }
 
 func NewObjClass(val string) Value {
-	valObj := &ObjClass{Obj: object.Obj{Type: objtype.OBJ_CLASS}, Name: val}
+	valObj := &ObjClass{Obj: object.Obj{Type: objtype.OBJ_CLASS}, Name: val, Methods: make(map[string]*ObjFunction)}
 	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
 }
 
 func NewObjInstance(klass *ObjClass) Value {
 	valObj := &ObjInstance{Obj: object.Obj{Type: objtype.OBJ_INSTANCE}, Klass: klass, Fields: make(map[string]Value)}
+	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
+}
+
+func NewObjBoundMethod(receiver Value, method *ObjFunction) Value {
+	valObj := &ObjBoundMethod{Obj: object.Obj{Type: objtype.OBJ_BOUND_METHOD}, Receiver: receiver, Method: method}
 	return Value{Type: valuetype.VAL_OBJ, Data: (*object.Obj)(unsafe.Pointer(valObj))}
 }
 
@@ -118,6 +130,10 @@ func (value Value) AsInstance() *ObjInstance {
 	return (*ObjInstance)(unsafe.Pointer(value.AsObj()))
 }
 
+func (value Value) AsBoundMethod() *ObjBoundMethod {
+	return (*ObjBoundMethod)(unsafe.Pointer(value.AsObj()))
+}
+
 func (value Value) AsGoString() string {
 	return value.AsString().String
 }
@@ -142,6 +158,10 @@ func (value Value) ObjType() objtype.ObjectType {
 	return value.AsObj().Type
 }
 
+func (value Value) isobjtype(objectType objtype.ObjectType) bool {
+	return value.IsObj() && value.ObjType() == objectType
+}
+
 func (value Value) IsFunction() bool {
 	return value.isobjtype(objtype.OBJ_FUNCTION)
 }
@@ -162,8 +182,8 @@ func (value Value) IsInstance() bool {
 	return value.isobjtype(objtype.OBJ_INSTANCE)
 }
 
-func (value Value) isobjtype(objectType objtype.ObjectType) bool {
-	return value.IsObj() && value.ObjType() == objectType
+func (value Value) isBoundMethod() bool {
+	return value.isobjtype(objtype.OBJ_BOUND_METHOD)
 }
 
 type ValueArray struct {
@@ -223,6 +243,9 @@ func (value Value) PrintObject() {
 
 	case objtype.OBJ_INSTANCE:
 		fmt.Printf("%s instance", value.AsInstance().Klass.Name)
+
+	case objtype.OBJ_BOUND_METHOD:
+		printFunction(value.AsBoundMethod().Method)
 
 	}
 }

@@ -36,4 +36,5 @@ const (
 	OP_CALL
 	OP_RETURN
 	OP_CLASS
+	OP_METHOD
 )
