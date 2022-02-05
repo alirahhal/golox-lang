@@ -31,8 +31,9 @@ type CallFrame struct {
 type VM struct {
 	Frames []CallFrame
 
-	Stack   []value.Value
-	Globals map[string]value.Value
+	Stack      []value.Value
+	Globals    map[string]value.Value
+	InitString string
 }
 
 func clockNative(argCount int, args []value.Value) value.Value {
@@ -45,6 +46,9 @@ func New() *VM {
 
 func (vm *VM) InitVM() {
 	vm.resetStack()
+
+	vm.InitString = ""
+	vm.InitString = "init"
 
 	vm.defineNative("clock", clockNative)
 }
@@ -367,6 +371,14 @@ func (vm *VM) callValue(callee value.Value, argCount int) bool {
 		case objtype.OBJ_CLASS:
 			klass := callee.AsClass()
 			vm.Stack[len(vm.Stack)-argCount-1] = value.NewObjInstance(klass)
+			initializer, present := klass.Methods[vm.InitString]
+			if present {
+				return vm.call(initializer, argCount)
+			} else if argCount != 0 {
+				vm.runtimeError("Expected 0 arguments but got %d.",
+					argCount)
+				return false
+			}
 			return true
 
 		case objtype.OBJ_FUNCTION:

@@ -49,6 +49,7 @@ type FunctionType byte
 
 const (
 	TYPE_FUNCTION FunctionType = iota
+	TYPE_INITIALIZER
 	TYPE_METHOD
 	TYPE_SCRIPT
 )
@@ -223,7 +224,12 @@ func (parser *Parser) emitJump(instruction opcode.OpCode) int {
 }
 
 func (parser *Parser) emitReturn() {
-	parser.emitByte(byte(opcode.OP_NIL))
+	if parser.CurrentCompiler.funcType == TYPE_INITIALIZER {
+		parser.emitBytes(byte(opcode.OP_GET_LOCAL), 0)
+	} else {
+		parser.emitByte(byte(opcode.OP_NIL))
+	}
+
 	parser.emitByte(byte(opcode.OP_RETURN))
 }
 
@@ -633,6 +639,9 @@ func (parser *Parser) method() {
 	constant := parser.identifierConstant(&parser.Previous)
 
 	funcType := TYPE_METHOD
+	if parser.Previous.Lexeme == "init" {
+		funcType = TYPE_INITIALIZER
+	}
 	parser.function(funcType)
 
 	// TODO: handle edge case (nameConstant > 255)
@@ -774,6 +783,10 @@ func (parser *Parser) returnStatement() {
 	if parser.match(tokentype.TOKEN_SEMICOLON) {
 		parser.emitReturn()
 	} else {
+		if parser.CurrentCompiler.funcType == TYPE_INITIALIZER {
+			parser.error("Can't return a value from an initializer.")
+		}
+
 		parser.expression()
 		parser.consume(tokentype.TOKEN_SEMICOLON, "Expect ';' after return value.")
 		parser.emitByte(byte(opcode.OP_RETURN))
