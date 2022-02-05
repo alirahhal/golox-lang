@@ -361,6 +361,7 @@ func (vm *VM) callValue(callee value.Value, argCount int) bool {
 
 		case objtype.OBJ_BOUND_METHOD:
 			bound := callee.AsBoundMethod()
+			vm.Stack[len(vm.Stack)-argCount-1] = bound.Receiver
 			return vm.call(bound.Method, argCount)
 
 		case objtype.OBJ_CLASS:

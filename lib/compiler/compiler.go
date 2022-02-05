@@ -17,11 +17,12 @@ import (
 )
 
 type Parser struct {
-	Current   token.Token
-	Previous  token.Token
-	HadError  bool
-	PanicMode bool
-	CurrentC  *Compiler
+	Current         token.Token
+	Previous        token.Token
+	HadError        bool
+	PanicMode       bool
+	CurrentCompiler *Compiler
+	CurrentClass    *ClassCompiler
 
 	scanner *scanner.Scanner
 }
@@ -35,6 +36,10 @@ type Compiler struct {
 	ScopeDepth int
 }
 
+type ClassCompiler struct {
+	enclosing *ClassCompiler
+}
+
 type Local struct {
 	Name  token.Token
 	depth int
@@ -44,6 +49,7 @@ type FunctionType byte
 
 const (
 	TYPE_FUNCTION FunctionType = iota
+	TYPE_METHOD
 	TYPE_SCRIPT
 )
 
@@ -68,19 +74,25 @@ func New(scanner *scanner.Scanner) *Parser {
 
 func (parser *Parser) initCompiler(funcType FunctionType) *Compiler {
 	compiler := new(Compiler)
-	compiler.enclosing = parser.CurrentC
+	compiler.enclosing = parser.CurrentCompiler
 	compiler.function = value.NewFunction(chunk.New())
 	compiler.funcType = funcType
 	compiler.ScopeDepth = 0
 	compiler.Locals = make([]Local, 0)
 
-	parser.CurrentC = compiler
+	parser.CurrentCompiler = compiler
 
 	if funcType != TYPE_SCRIPT {
 		compiler.function.Name = value.NewObjString(parser.Previous.Lexeme).AsString()
 	}
 
-	local := Local{depth: 0, Name: token.Token{Lexeme: ""}}
+	var local Local
+
+	if funcType != TYPE_FUNCTION {
+		local = Local{depth: 0, Name: token.Token{Lexeme: "this"}}
+	} else {
+		local = Local{depth: 0, Name: token.Token{Lexeme: ""}}
+	}
 	compiler.Locals = append(compiler.Locals, local)
 
 	return compiler
@@ -233,7 +245,7 @@ func (parser *Parser) patchJump(offset int) {
 
 func (parser *Parser) endCompiler() *value.ObjFunction {
 	parser.emitReturn()
-	function := parser.CurrentC.function
+	function := parser.CurrentCompiler.function
 
 	if config.DEBUG_PRINT_CODE {
 		if !parser.HadError {
@@ -247,20 +259,20 @@ func (parser *Parser) endCompiler() *value.ObjFunction {
 		}
 	}
 
-	parser.CurrentC = parser.CurrentC.enclosing
+	parser.CurrentCompiler = parser.CurrentCompiler.enclosing
 	return function
 }
 
 func (parser *Parser) beginScope() {
-	parser.CurrentC.ScopeDepth++
+	parser.CurrentCompiler.ScopeDepth++
 }
 
 func (parser *Parser) endScope() {
-	parser.CurrentC.ScopeDepth--
+	parser.CurrentCompiler.ScopeDepth--
 
-	for len(parser.CurrentC.Locals) > 0 && parser.CurrentC.Locals[len(parser.CurrentC.Locals)-1].depth > parser.CurrentC.ScopeDepth {
+	for len(parser.CurrentCompiler.Locals) > 0 && parser.CurrentCompiler.Locals[len(parser.CurrentCompiler.Locals)-1].depth > parser.CurrentCompiler.ScopeDepth {
 		parser.emitByte(byte(opcode.OP_POP))
-		parser.CurrentC.Locals = parser.CurrentC.Locals[:len(parser.CurrentC.Locals)-1]
+		parser.CurrentCompiler.Locals = parser.CurrentCompiler.Locals[:len(parser.CurrentCompiler.Locals)-1]
 	}
 }
 
@@ -414,6 +426,10 @@ func (parser *Parser) variable(canAssign bool) {
 }
 
 func (parser *Parser) this(canAssign bool) {
+	if parser.CurrentClass == nil {
+		parser.error("Can't use 'this' outside of a class.")
+		return
+	}
 	parser.variable(false)
 }
 
@@ -462,8 +478,8 @@ func (parser *Parser) identifierConstant(name *token.Token) int {
 }
 
 func (parser *Parser) resolveLocal(name *token.Token) int {
-	for i := len(parser.CurrentC.Locals) - 1; i >= 0; i-- {
-		local := &parser.CurrentC.Locals[i]
+	for i := len(parser.CurrentCompiler.Locals) - 1; i >= 0; i-- {
+		local := &parser.CurrentCompiler.Locals[i]
 		if name.Lexeme == local.Name.Lexeme {
 			if local.depth == -1 {
 				parser.error("Cannot read local variable in its own initializer.")
@@ -477,19 +493,19 @@ func (parser *Parser) resolveLocal(name *token.Token) int {
 
 func (parser *Parser) addLocal(name token.Token) {
 	local := Local{Name: name, depth: -1}
-	parser.CurrentC.Locals = append(parser.CurrentC.Locals, local)
+	parser.CurrentCompiler.Locals = append(parser.CurrentCompiler.Locals, local)
 }
 
 func (parser *Parser) declareVariable() {
 	// Global variables are implicitly declared.
-	if parser.CurrentC.ScopeDepth == 0 {
+	if parser.CurrentCompiler.ScopeDepth == 0 {
 		return
 	}
 
 	name := &parser.Previous
-	for i := len(parser.CurrentC.Locals) - 1; i >= 0; i-- {
-		local := &parser.CurrentC.Locals[i]
-		if local.depth != -1 && local.depth < parser.CurrentC.ScopeDepth {
+	for i := len(parser.CurrentCompiler.Locals) - 1; i >= 0; i-- {
+		local := &parser.CurrentCompiler.Locals[i]
+		if local.depth != -1 && local.depth < parser.CurrentCompiler.ScopeDepth {
 			break
 		}
 
@@ -504,7 +520,7 @@ func (parser *Parser) parserVariable(errorMessage string) int {
 	parser.consume(tokentype.TOKEN_IDENTIFIER, errorMessage)
 
 	parser.declareVariable()
-	if parser.CurrentC.ScopeDepth > 0 {
+	if parser.CurrentCompiler.ScopeDepth > 0 {
 		return 0
 	}
 
@@ -512,14 +528,14 @@ func (parser *Parser) parserVariable(errorMessage string) int {
 }
 
 func (parser *Parser) markInitialized() {
-	if parser.CurrentC.ScopeDepth == 0 {
+	if parser.CurrentCompiler.ScopeDepth == 0 {
 		return
 	}
-	parser.CurrentC.Locals[len(parser.CurrentC.Locals)-1].depth = parser.CurrentC.ScopeDepth
+	parser.CurrentCompiler.Locals[len(parser.CurrentCompiler.Locals)-1].depth = parser.CurrentCompiler.ScopeDepth
 }
 
 func (parser *Parser) defineVariable(global int) {
-	if parser.CurrentC.ScopeDepth > 0 {
+	if parser.CurrentCompiler.ScopeDepth > 0 {
 		parser.markInitialized()
 		return
 	}
@@ -588,8 +604,8 @@ func (parser *Parser) function(funcType FunctionType) {
 	parser.consume(tokentype.TOKEN_LEFT_PAREN, "Expect '(' after function name.")
 	if !parser.check(tokentype.TOKEN_RIGHT_PAREN) {
 		for {
-			parser.CurrentC.function.Arity++
-			if parser.CurrentC.function.Arity > 255 {
+			parser.CurrentCompiler.function.Arity++
+			if parser.CurrentCompiler.function.Arity > 255 {
 				parser.errorAtCurrent("Cant have more than 255 parameters.")
 			}
 
@@ -616,7 +632,7 @@ func (parser *Parser) method() {
 	parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect method name.")
 	constant := parser.identifierConstant(&parser.Previous)
 
-	funcType := TYPE_FUNCTION
+	funcType := TYPE_METHOD
 	parser.function(funcType)
 
 	// TODO: handle edge case (nameConstant > 255)
@@ -633,6 +649,10 @@ func (parser *Parser) classDeclaration() {
 	parser.emitBytes(byte(opcode.OP_CLASS), byte(nameConstant))
 	parser.defineVariable(nameConstant)
 
+	var classCompiler ClassCompiler
+	classCompiler.enclosing = parser.CurrentClass
+	parser.CurrentClass = &classCompiler
+
 	parser.namedVariable(className, false)
 	parser.consume(tokentype.TOKEN_LEFT_BRACE, "Expect '{' before class body.")
 	for !parser.check(tokentype.TOKEN_RIGHT_BRACE) && !parser.check(tokentype.TOKEN_EOF) {
@@ -640,6 +660,8 @@ func (parser *Parser) classDeclaration() {
 	}
 	parser.consume(tokentype.TOKEN_RIGHT_BRACE, "Expect '}' after class body.")
 	parser.emitByte(byte(opcode.OP_POP))
+
+	parser.CurrentClass = parser.CurrentClass.enclosing
 }
 
 func (parser *Parser) funDeclaration() {
@@ -745,7 +767,7 @@ func (parser *Parser) printStatement() {
 }
 
 func (parser *Parser) returnStatement() {
-	if parser.CurrentC.funcType == TYPE_SCRIPT {
+	if parser.CurrentCompiler.funcType == TYPE_SCRIPT {
 		parser.error("Cant return from top-level code.")
 	}
 
@@ -840,7 +862,7 @@ func (parser *Parser) statement() {
 }
 
 func (parser *Parser) currentChunk() *chunk.Chunk {
-	return parser.CurrentC.function.Chunk.(*chunk.Chunk)
+	return parser.CurrentCompiler.function.Chunk.(*chunk.Chunk)
 }
 
 func (parser *Parser) errorAt(token *token.Token, message string) {

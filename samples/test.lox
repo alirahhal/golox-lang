@@ -20,11 +20,12 @@
 
 class Scone {
   topping(first, second) {
-    print "scone with " + first + " and " + second;
+    print "scone with " + first + " and " + second + "" + this.ending;
   }
 }
 
 var scone = Scone();
+scone.ending = ".";
 scone.topping("berries", "cream");
 
 
