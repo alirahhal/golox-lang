@@ -61,6 +61,8 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return constantInstruction("OP_GET_PROPERTY", chunk, offset)
 	case opcode.OP_SET_PROPERTY:
 		return constantInstruction("OP_SET_PROPERTY", chunk, offset)
+	case opcode.OP_GET_SUPER:
+		return constantInstruction("OP_GET_SUPER", chunk, offset)
 	case opcode.OP_EQUAL:
 		return simpleInstruction("OP_EQUAL", offset)
 	case opcode.OP_GREATER:
@@ -91,6 +93,8 @@ func DisassembleInstruction(chunk *chunk.Chunk, offset int) int {
 		return simpleInstruction("OP_RETURN", offset)
 	case opcode.OP_CLASS:
 		return constantInstruction("OP_CLASS", chunk, offset)
+	case opcode.OP_INHERIT:
+		return simpleInstruction("OP_INHERIT", offset)
 	case opcode.OP_METHOD:
 		return constantInstruction("OP_METHOD", chunk, offset)
 	default:

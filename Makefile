@@ -1,6 +1,6 @@
 BINARY_DIR=bin
 SRC_NAME=.\main.go
-SAMPLE=.\samples\test.lox
+SAMPLE=.\samples\basic.lox
 
 all: run
 

@@ -37,7 +37,8 @@ type Compiler struct {
 }
 
 type ClassCompiler struct {
-	enclosing *ClassCompiler
+	enclosing     *ClassCompiler
+	HasSuperClass bool
 }
 
 type Local struct {
@@ -73,32 +74,6 @@ func New(scanner *scanner.Scanner) *Parser {
 	return parser
 }
 
-func (parser *Parser) initCompiler(funcType FunctionType) *Compiler {
-	compiler := new(Compiler)
-	compiler.enclosing = parser.CurrentCompiler
-	compiler.function = value.NewFunction(chunk.New())
-	compiler.funcType = funcType
-	compiler.ScopeDepth = 0
-	compiler.Locals = make([]Local, 0)
-
-	parser.CurrentCompiler = compiler
-
-	if funcType != TYPE_SCRIPT {
-		compiler.function.Name = value.NewObjString(parser.Previous.Lexeme).AsString()
-	}
-
-	var local Local
-
-	if funcType != TYPE_FUNCTION {
-		local = Local{depth: 0, Name: token.Token{Lexeme: "this"}}
-	} else {
-		local = Local{depth: 0, Name: token.Token{Lexeme: ""}}
-	}
-	compiler.Locals = append(compiler.Locals, local)
-
-	return compiler
-}
-
 func init() {
 	rules = make(map[tokentype.TokenType]ParseRule)
 	rules[tokentype.TOKEN_LEFT_PAREN] = ParseRule{(*Parser).grouping, (*Parser).call, precedence.PREC_CALL}
@@ -114,16 +89,16 @@ func init() {
 	rules[tokentype.TOKEN_STAR] = ParseRule{nil, (*Parser).binary, precedence.PREC_FACTOR}
 	rules[tokentype.TOKEN_BANG] = ParseRule{(*Parser).unary, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_BANG_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_EQUALITY}
-	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_EQUALITY}
-	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
+	rules[tokentype.TOKEN_EQUAL] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_EQUAL_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_EQUALITY}
 	rules[tokentype.TOKEN_GREATER] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_GREATER_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_LESS] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
-	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_LESS_EQUAL] = ParseRule{nil, (*Parser).binary, precedence.PREC_COMPARISON}
 	rules[tokentype.TOKEN_IDENTIFIER] = ParseRule{(*Parser).variable, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_STRING] = ParseRule{(*Parser).string, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_STRING] = ParseRule{(*Parser).string_, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_NUMBER] = ParseRule{(*Parser).number, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_AND] = ParseRule{nil, (*Parser).and_, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_AND] = ParseRule{nil, (*Parser).and_, precedence.PREC_AND}
 	rules[tokentype.TOKEN_CLASS] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_ELSE] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_FALSE] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
@@ -131,10 +106,10 @@ func init() {
 	rules[tokentype.TOKEN_FUN] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_IF] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_NIL] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_OR] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_OR] = ParseRule{nil, (*Parser).or, precedence.PREC_OR}
 	rules[tokentype.TOKEN_PRINT] = ParseRule{nil, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_RETURN] = ParseRule{nil, nil, precedence.PREC_NONE}
-	rules[tokentype.TOKEN_SUPER] = ParseRule{nil, nil, precedence.PREC_NONE}
+	rules[tokentype.TOKEN_SUPER] = ParseRule{(*Parser).super, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_THIS] = ParseRule{(*Parser).this, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_TRUE] = ParseRule{(*Parser).literal, nil, precedence.PREC_NONE}
 	rules[tokentype.TOKEN_VAR] = ParseRule{nil, nil, precedence.PREC_NONE}
@@ -161,6 +136,32 @@ func Compile(source string) *value.ObjFunction {
 		return nil
 	}
 	return function
+}
+
+func (parser *Parser) initCompiler(funcType FunctionType) *Compiler {
+	compiler := new(Compiler)
+	compiler.enclosing = parser.CurrentCompiler
+	compiler.function = value.NewFunction(chunk.New())
+	compiler.funcType = funcType
+	compiler.ScopeDepth = 0
+	compiler.Locals = make([]Local, 0)
+
+	parser.CurrentCompiler = compiler
+
+	if funcType != TYPE_SCRIPT {
+		compiler.function.Name = value.NewObjString(parser.Previous.Lexeme).AsString()
+	}
+
+	var local Local
+
+	if funcType != TYPE_FUNCTION {
+		local = Local{depth: 0, Name: token.Token{Lexeme: "this"}}
+	} else {
+		local = Local{depth: 0, Name: token.Token{Lexeme: ""}}
+	}
+	compiler.Locals = append(compiler.Locals, local)
+
+	return compiler
 }
 
 func (parser *Parser) advance() {
@@ -283,7 +284,6 @@ func (parser *Parser) endScope() {
 }
 
 func (parser *Parser) binary(canAssign bool) {
-	// Remember the operator
 	operatorType := parser.Previous.Type
 
 	// Compile the right operand
@@ -371,7 +371,7 @@ func (parser *Parser) number(canAssign bool) {
 	parser.emitConstant(value.New(valuetype.VAL_NUMBER, val))
 }
 
-func (parser *Parser) or_(canAssign bool) {
+func (parser *Parser) or(canAssign bool) {
 	elseJump := parser.emitJump(opcode.OP_JUMP_IF_FALSE)
 	endJump := parser.emitJump(opcode.OP_JUMP)
 
@@ -382,7 +382,7 @@ func (parser *Parser) or_(canAssign bool) {
 	parser.patchJump(endJump)
 }
 
-func (parser *Parser) string(canAssign bool) {
+func (parser *Parser) string_(canAssign bool) {
 	parser.emitConstant(
 		value.NewObjString(parser.Previous.Lexeme[1 : len(parser.Previous.Lexeme)-1]))
 }
@@ -431,11 +431,32 @@ func (parser *Parser) variable(canAssign bool) {
 	parser.namedVariable(parser.Previous, canAssign)
 }
 
+func (parser *Parser) syntheticToken(text string) token.Token {
+	return token.Token{Lexeme: text}
+}
+
+func (parser *Parser) super(canAssign bool) {
+	if parser.CurrentClass == nil {
+		parser.error("Can't use 'super' outside of a class.")
+	} else if !parser.CurrentClass.HasSuperClass {
+		parser.error("Can't use 'super' in a class with no superclass.")
+	}
+
+	parser.consume(tokentype.TOKEN_DOT, "Expect '.' after 'super'.")
+	parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect superclass method name.")
+	name := parser.identifierConstant(&parser.Previous)
+
+	parser.namedVariable(parser.syntheticToken("this"), false)
+	parser.namedVariable(parser.syntheticToken("super"), false)
+	parser.emitBytes(byte(opcode.OP_GET_SUPER), byte(name))
+}
+
 func (parser *Parser) this(canAssign bool) {
 	if parser.CurrentClass == nil {
 		parser.error("Can't use 'this' outside of a class.")
 		return
 	}
+
 	parser.variable(false)
 }
 
@@ -644,7 +665,7 @@ func (parser *Parser) method() {
 	}
 	parser.function(funcType)
 
-	// TODO: handle edge case (nameConstant > 255)
+	// TODO: handle edge case (constant > 255)
 	parser.emitBytes(byte(opcode.OP_METHOD), byte(constant))
 }
 
@@ -659,16 +680,40 @@ func (parser *Parser) classDeclaration() {
 	parser.defineVariable(nameConstant)
 
 	var classCompiler ClassCompiler
+	classCompiler.HasSuperClass = false
 	classCompiler.enclosing = parser.CurrentClass
 	parser.CurrentClass = &classCompiler
 
+	if parser.match(tokentype.TOKEN_LESS) {
+		parser.consume(tokentype.TOKEN_IDENTIFIER, "Expect superclass name.")
+		parser.variable(false)
+
+		if className.Lexeme == parser.Previous.Lexeme {
+			parser.error("A class can't inherit from itself.")
+		}
+
+		parser.beginScope()
+		parser.addLocal(parser.syntheticToken("super"))
+		parser.defineVariable(0)
+
+		parser.namedVariable(className, false)
+		parser.emitByte(byte(opcode.OP_INHERIT))
+		classCompiler.HasSuperClass = true
+	}
+
 	parser.namedVariable(className, false)
 	parser.consume(tokentype.TOKEN_LEFT_BRACE, "Expect '{' before class body.")
+
 	for !parser.check(tokentype.TOKEN_RIGHT_BRACE) && !parser.check(tokentype.TOKEN_EOF) {
 		parser.method()
 	}
+
 	parser.consume(tokentype.TOKEN_RIGHT_BRACE, "Expect '}' after class body.")
 	parser.emitByte(byte(opcode.OP_POP))
+
+	if classCompiler.HasSuperClass {
+		parser.endScope()
+	}
 
 	parser.CurrentClass = parser.CurrentClass.enclosing
 }

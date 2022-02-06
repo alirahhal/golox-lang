@@ -199,6 +199,14 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.pop()
 			vm.push(value)
 
+		case opcode.OP_GET_SUPER:
+			name := vm.readConstant().AsGoString()
+			superClass := vm.pop().AsClass()
+
+			if !vm.bindMethod(superClass, name) {
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+
 		case opcode.OP_EQUAL:
 			b := vm.pop()
 			a := vm.pop()
@@ -291,6 +299,20 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 			frame = &vm.Frames[len(vm.Frames)-1]
+
+		case opcode.OP_INHERIT:
+			superClass := vm.peek(1)
+			if !superClass.IsClass() {
+				vm.runtimeError("Superclass must be a class.")
+				return interpretresult.INTERPRET_RUNTIME_ERROR
+			}
+			subClass := vm.peek(0).AsClass()
+
+			/* Add superClass methods to subClass*/
+			for index, element := range superClass.AsClass().Methods {
+				subClass.Methods[index] = element
+			}
+			vm.pop()
 
 		case opcode.OP_METHOD:
 			vm.defineMethod(vm.readConstant().AsGoString())
