@@ -337,9 +337,9 @@ func (parser *Parser) dot(canAssign bool) {
 
 	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
 		parser.expression()
-		parser.emitBytes(byte(opcode.OP_SET_PROPERTY), byte(name))
+		parser.emitLongOrShort(name, byte(opcode.OP_SET_PROPERTY), byte(opcode.OP_SET_PROPERTY_LONG))
 	} else {
-		parser.emitBytes(byte(opcode.OP_GET_PROPERTY), byte(name))
+		parser.emitLongOrShort(name, byte(opcode.OP_GET_PROPERTY), byte(opcode.OP_GET_PROPERTY_LONG))
 	}
 }
 
@@ -407,23 +407,20 @@ func (parser *Parser) namedVariable(name token.Token, canAssign bool) {
 
 	if canAssign && parser.match(tokentype.TOKEN_EQUAL) {
 		parser.expression()
-		if arg < 256 {
-			parser.emitBytes(byte(setOp), byte(arg))
-		} else {
-			parser.emitByte(byte(setOpLong))
-			parser.emitByte(byte(arg & 0xff))
-			parser.emitByte(byte((arg >> 8) & 0xff))
-			parser.emitByte(byte((arg >> 16) & 0xff))
-		}
+		parser.emitLongOrShort(arg, byte(setOp), byte(setOpLong))
 	} else {
-		if arg < 256 {
-			parser.emitBytes(byte(getOp), byte(arg))
-		} else {
-			parser.emitByte(byte(getOpLong))
-			parser.emitByte(byte(arg & 0xff))
-			parser.emitByte(byte((arg >> 8) & 0xff))
-			parser.emitByte(byte((arg >> 16) & 0xff))
-		}
+		parser.emitLongOrShort(arg, byte(getOp), byte(getOpLong))
+	}
+}
+
+func (parser *Parser) emitLongOrShort(val int, shortOp byte, longOp byte) {
+	if val < 256 {
+		parser.emitBytes(shortOp, byte(val))
+	} else {
+		parser.emitByte(longOp)
+		parser.emitByte(byte(val & 0xff))
+		parser.emitByte(byte((val >> 8) & 0xff))
+		parser.emitByte(byte((val >> 16) & 0xff))
 	}
 }
 
@@ -567,14 +564,7 @@ func (parser *Parser) defineVariable(global int) {
 		return
 	}
 
-	if global < 256 {
-		parser.emitBytes(byte(opcode.OP_DEFINE_GLOBAL), byte(global))
-	} else {
-		parser.emitByte(byte(opcode.OP_DEFINE_GLOBAL_LONG))
-		parser.emitByte(byte(global & 0xff))
-		parser.emitByte(byte((global >> 8) & 0xff))
-		parser.emitByte(byte((global >> 16) & 0xff))
-	}
+	parser.emitLongOrShort(global, byte(opcode.OP_DEFINE_GLOBAL), byte(opcode.OP_DEFINE_GLOBAL_LONG))
 }
 
 func (parser *Parser) argumentList() byte {
@@ -665,8 +655,7 @@ func (parser *Parser) method() {
 	}
 	parser.function(funcType)
 
-	// TODO: handle edge case (constant > 255)
-	parser.emitBytes(byte(opcode.OP_METHOD), byte(constant))
+	parser.emitLongOrShort(constant, byte(opcode.OP_METHOD), byte(opcode.OP_METHOD_LONG))
 }
 
 func (parser *Parser) classDeclaration() {
@@ -675,8 +664,8 @@ func (parser *Parser) classDeclaration() {
 	nameConstant := parser.identifierConstant(&parser.Previous)
 	parser.declareVariable()
 
-	// TODO: handle edge case (nameConstant > 255)
-	parser.emitBytes(byte(opcode.OP_CLASS), byte(nameConstant))
+	parser.emitLongOrShort(nameConstant, byte(opcode.OP_CLASS), byte(opcode.OP_CLASS_LONG))
+
 	parser.defineVariable(nameConstant)
 
 	var classCompiler ClassCompiler

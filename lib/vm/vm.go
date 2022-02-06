@@ -84,12 +84,13 @@ func (vm *VM) run() interpretresult.InterpretResult {
 
 		var instruction opcode.OpCode
 		switch instruction = opcode.OpCode(vm.readByte()); instruction {
-		case opcode.OP_CONSTANT:
-			var constant value.Value = vm.readConstant()
-			vm.push(constant)
-
-		case opcode.OP_CONSTANT_LONG:
-			var constant value.Value = vm.readConstantLong()
+		case opcode.OP_CONSTANT, opcode.OP_CONSTANT_LONG:
+			var constant value.Value
+			if instruction == opcode.OP_CONSTANT {
+				constant = vm.readConstant()
+			} else {
+				constant = vm.readConstantLong()
+			}
 			vm.push(constant)
 
 		case opcode.OP_NIL:
@@ -104,24 +105,31 @@ func (vm *VM) run() interpretresult.InterpretResult {
 		case opcode.OP_POP:
 			vm.pop()
 
-		case opcode.OP_GET_LOCAL:
-			slot := vm.readByte()
-			vm.push(vm.Stack[frame.Slots+int(slot)])
+		case opcode.OP_GET_LOCAL, opcode.OP_GET_LOCAL_LONG:
+			var slot int
+			if instruction == opcode.OP_GET_LOCAL {
+				slot = int(vm.readByte())
+			} else {
+				slot = int(vm.readLong())
+			}
+			vm.push(vm.Stack[frame.Slots+slot])
 
-		case opcode.OP_GET_LOCAL_LONG:
-			slot := vm.readLong()
-			vm.push(vm.Stack[frame.Slots+int(slot)])
+		case opcode.OP_SET_LOCAL, opcode.OP_SET_LOCAL_LONG:
+			var slot int
+			if instruction == opcode.OP_SET_LOCAL {
+				slot = int(vm.readByte())
+			} else {
+				slot = int(vm.readLong())
+			}
+			vm.Stack[frame.Slots+slot] = vm.peek(0)
 
-		case opcode.OP_SET_LOCAL:
-			slot := vm.readByte()
-			vm.Stack[frame.Slots+int(slot)] = vm.peek(0)
-
-		case opcode.OP_SET_LOCAL_LONG:
-			slot := vm.readLong()
-			vm.Stack[frame.Slots+int(slot)] = vm.peek(0)
-
-		case opcode.OP_GET_GLOBAL:
-			name := vm.readConstant().AsGoString()
+		case opcode.OP_GET_GLOBAL, opcode.OP_GET_GLOBAL_LONG:
+			var name string
+			if instruction == opcode.OP_GET_GLOBAL {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
+			}
 			val, present := vm.Globals[name]
 			if !present {
 				vm.runtimeError("Undefined variable '%s'.", name)
@@ -129,27 +137,23 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			}
 			vm.push(val)
 
-		case opcode.OP_GET_GLOBAL_LONG:
-			name := vm.readConstantLong().AsGoString()
-			val, present := vm.Globals[name]
-			if !present {
-				vm.runtimeError("Undefined variable '%s'.", name)
-				return interpretresult.INTERPRET_RUNTIME_ERROR
+		case opcode.OP_DEFINE_GLOBAL, opcode.OP_DEFINE_GLOBAL_LONG:
+			var name string
+			if instruction == opcode.OP_DEFINE_GLOBAL {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
 			}
-			vm.push(val)
-
-		case opcode.OP_DEFINE_GLOBAL:
-			name := vm.readConstant().AsGoString()
 			vm.Globals[name] = vm.peek(0)
 			vm.pop()
 
-		case opcode.OP_DEFINE_GLOBAL_LONG:
-			name := vm.readConstantLong().AsGoString()
-			vm.Globals[name] = vm.peek(0)
-			vm.pop()
-
-		case opcode.OP_SET_GLOBAL:
-			name := vm.readConstant().AsGoString()
+		case opcode.OP_SET_GLOBAL, opcode.OP_SET_GLOBAL_LONG:
+			var name string
+			if instruction == opcode.OP_SET_GLOBAL {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
+			}
 			_, present := vm.Globals[name]
 			if !present {
 				vm.runtimeError("Undefined variable '%s'.", name)
@@ -157,23 +161,19 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			}
 			vm.Globals[name] = vm.peek(0)
 
-		case opcode.OP_SET_GLOBAL_LONG:
-			name := vm.readConstantLong().AsGoString()
-			_, present := vm.Globals[name]
-			if !present {
-				vm.runtimeError("Undefined variable '%s'.", name)
-				return interpretresult.INTERPRET_RUNTIME_ERROR
-			}
-			vm.Globals[name] = vm.peek(0)
-
-		case opcode.OP_GET_PROPERTY:
+		case opcode.OP_GET_PROPERTY, opcode.OP_GET_PROPERTY_LONG:
 			if !vm.peek(0).IsInstance() {
 				vm.runtimeError("Only instances have properties.")
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 
 			instacne := vm.peek(0).AsInstance()
-			name := vm.readConstant().AsGoString()
+			var name string
+			if instruction == opcode.OP_GET_PROPERTY {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
+			}
 
 			value, present := instacne.Fields[name]
 			if present {
@@ -186,14 +186,20 @@ func (vm *VM) run() interpretresult.InterpretResult {
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 
-		case opcode.OP_SET_PROPERTY:
+		case opcode.OP_SET_PROPERTY, opcode.OP_SET_PROPERTY_LONG:
 			if !vm.peek(1).IsInstance() {
 				vm.runtimeError("Only instances have fields.")
 				return interpretresult.INTERPRET_RUNTIME_ERROR
 			}
 
 			instance := vm.peek(1).AsInstance()
-			name := vm.readConstant().AsGoString()
+			var name string
+			if instruction == opcode.OP_SET_PROPERTY {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
+			}
+
 			instance.Fields[name] = vm.peek(0)
 			value := vm.pop()
 			vm.pop()
@@ -314,8 +320,25 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			}
 			vm.pop()
 
-		case opcode.OP_METHOD:
-			vm.defineMethod(vm.readConstant().AsGoString())
+		case opcode.OP_METHOD, opcode.OP_METHOD_LONG:
+			var name string
+			if instruction == opcode.OP_METHOD {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
+			}
+
+			vm.defineMethod(name)
+
+		case opcode.OP_CLASS, opcode.OP_CLASS_LONG:
+			var name string
+			if instruction == opcode.OP_CLASS {
+				name = vm.readConstant().AsGoString()
+			} else {
+				name = vm.readConstantLong().AsGoString()
+			}
+
+			vm.push(value.NewObjClass(name))
 
 		case opcode.OP_RETURN:
 			result := vm.pop()
@@ -335,9 +358,6 @@ func (vm *VM) run() interpretresult.InterpretResult {
 			vm.push(result)
 
 			frame = &vm.Frames[len(vm.Frames)-1]
-
-		case opcode.OP_CLASS:
-			vm.push(value.NewObjClass(vm.readConstant().AsGoString()))
 
 		}
 	}
