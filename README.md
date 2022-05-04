@@ -2,6 +2,9 @@
 
 golox-lang is a stack based VM implementation (compiles to bytecode) of the lox language designed by [Bob Nystrom](https://github.com/munificent) in his book [Crafting Interpreters](http://www.craftinginterpreters.com/), using GoLang.
 
+## Environment setup
+
+You just need to have Go and Make installed on your sytem to get up and running. You can follow the instructions [here](https://go.dev/doc/install) to install Go on your system. On windows, you can use the choco package manager to install Make `choco install make`.
 
 ## Basic Usage
 
