@@ -14,7 +14,7 @@ make run
 Run with a specific sample file:
 
 ```Make
-make run testfile=samples/test.lox
+make run file=samples/basic.lox
 ```
 
 ## Grammar
